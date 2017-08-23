@@ -5,7 +5,13 @@ module pl {
 
     export class ContactForm {
 
-
+        /**
+         *
+         * @param {HTMLElement} template
+         */
+        constructor(template: HTMLElement) {
+            console.log(template);
+        }
 
     }
 
