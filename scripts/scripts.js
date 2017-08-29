@@ -6,11 +6,61 @@ var pl;
     var ContactForm = (function () {
         /**
          *
-         * @param {HTMLElement} template
+         * @param {HTMLElement} form
          */
-        function ContactForm(template) {
-            console.log(template);
+        function ContactForm(form) {
+            if (!(form instanceof HTMLElement))
+                throw 'Template is not an HTMLElement';
+            this._form = form;
+            this._inputs = ContactForm.getInputs(this._form);
+            this.onInputChange = this.onInputChange.bind(this);
+            this.initializeEvents();
         }
+        /**
+         * Get form inputs.
+         * @param {HTMLFormElement} form
+         * @returns {NodeListOf<Element>}
+         */
+        ContactForm.getInputs = function (form) {
+            var validInputs = [
+                "input[type=text]",
+                "input[type=checkbox]",
+                "input[type=radio]",
+                "textarea"
+            ];
+            return form.querySelectorAll(validInputs.join(","));
+        };
+        /**
+         * Attach handlers to contact form elements.
+         */
+        ContactForm.prototype.initializeEvents = function () {
+            var _this = this;
+            [].forEach.call(this._inputs, function (input) {
+                if (input.type === 'text' || input.tagName.toLowerCase() === 'textarea')
+                    input.addEventListener('keyup', _this.onInputChange, false);
+                input.addEventListener('change', _this.onInputChange, false);
+            });
+        };
+        /**
+         * Fires when an input changes.
+         * @param {Event} ev
+         */
+        ContactForm.prototype.onInputChange = function (ev) {
+            console.log(ev.target.value);
+        };
+        /**
+         * Check validity of an input.
+         * @param {HTMLElement} input
+         * @returns {boolean} validity
+         */
+        ContactForm.prototype.isInputValid = function (input) {
+        };
+        /**
+         * Reset form.
+         */
+        ContactForm.prototype.resetForm = function () {
+            this._form.reset();
+        };
         return ContactForm;
     }());
     pl.ContactForm = ContactForm;

@@ -80,7 +80,14 @@
 
         <script src="scripts/scripts.js"></script>
         <script>
+            (function() {
+                'use strict';
 
+                var contactForm = document.querySelector('.contact-form');
+
+                window.form = new pl.ContactForm(contactForm);
+
+            })();
         </script>
     </body>
 </html>
