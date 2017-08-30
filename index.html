@@ -65,20 +65,23 @@
 
         <form class="contact-form">
             <div class="input-container">
-                <input name="Nombre" placeholder="Nombre" type="text">
+                <input data-validate="notEmpty" name="Name" placeholder="Name" type="text">
             </div>
             <div class="input-container">
-                <input name="Email" placeholder="Email" type="text">
+                <input data-validate="email" name="Email" placeholder="Email" type="text">
             </div>
             <div class="input-container">
-                <textarea name="Mensaje" placeholder="Mensaje"></textarea>
+                <input data-validate="phone" name="Phone" placeholder="Phone" type="text">
+            </div>
+            <div class="input-container">
+                <textarea data-validate="notEmpty" name="Message" placeholder="Message"></textarea>
             </div>
 
-            <input type="submit" value="Enviar">
+            <input type="submit" value="Send">
         </form>
         <!-- /.Contact Form -->
 
-        <script src="scripts/scripts.js"></script>
+        <script src="scripts/js/pl-contact-form.min.js"></script>
         <script>
             (function() {
                 'use strict';
