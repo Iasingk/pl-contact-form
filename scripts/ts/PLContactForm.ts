@@ -6,20 +6,62 @@ module pl {
     export class ContactForm {
 
         /**
+         * Points to form element.
          * @type {HTMLFormElement}
+         * @private
          */
-        _form: HTMLFormElement;
+        private _form: HTMLFormElement;
 
         /**
-         * @type {NodeListOf<Element>}
+         * Store custom handlers for each event in ajax request.
+         * @type {object}
+         * @private
          */
-        _inputs: NodeListOf<Element>;
+        private _handlers: Object = {};
+
+        /**
+         * Points to form inputs.
+         * @type {NodeListOf<Element>}
+         * @private
+         */
+        private _inputs: NodeListOf<Element>;
+
+        /**
+         * Determine if window could close or not.
+         * @type {boolean}
+         * @private
+         */
+        private _letCloseWindow: boolean = true;
+
+        /**
+         * Check validity of an input.
+         * @param {HTMLInputElement} input
+         * @returns {boolean} validity
+         */
+        static isInputValid(input: HTMLInputElement) {
+            let validation = input.dataset['validate'],
+                name  = input.name,
+                value = input.value;
+
+            switch (validation) {
+                case 'notEmpty':
+                    return Validator.notEmpty(value);
+                case 'phone':
+                    return Validator.phone(value);
+                case 'email':
+                    return Validator.email(value);
+                default:
+                    "console" in window
+                    && console.log("Unknown validation type: " + name);
+                    return true;
+            }
+        }
 
         /**
          * Return if code is an invalid key.
          * @param {number} code
          */
-        private static invalidKey(code: number) {
+        static isInvalidKey(code: number) {
             let i,
                 invalidKeys = {
                     ALT_KEY        : 18,
@@ -46,7 +88,7 @@ module pl {
          * @param form
          * @returns {NodeListOf<Element>}
          */
-        public static getInputs(form: HTMLFormElement) {
+        static getInputs(form: HTMLFormElement) {
             let validInputs = [
                 "input[type=text]",
                 "input[type=checkbox]",
@@ -68,10 +110,28 @@ module pl {
             this._form = form;
             this._inputs = ContactForm.getInputs(this._form);
 
+            this.beforeUnload = this.beforeUnload.bind(this);
             this.onInputChange = this.onInputChange.bind(this);
             this.onSubmit = this.onSubmit.bind(this);
 
             this.initializeEvents();
+        }
+
+        /**
+         *
+         */
+        private ajaxRequest() {
+
+        }
+
+        /**
+         * Shows message while contact form is working
+         * and avoid user closes the window.
+         */
+        private beforeUnload() {
+            if (!this._letCloseWindow) {
+                return 'Sending message';
+            }
         }
 
         /**
@@ -90,6 +150,9 @@ module pl {
             // Attach on Submit handler to form.
             this._form.addEventListener('submit', this.onSubmit, false);
 
+            // Attach onbeforeunload handler.
+            window.onbeforeunload = this.beforeUnload;
+
         }
 
         /**
@@ -101,9 +164,9 @@ module pl {
             let code = ev.which || ev.keyCode || 0;
 
             // Do nothing if a key is invalid.
-            if (ContactForm.invalidKey(code)) return;
+            if (ContactForm.isInvalidKey(code)) return;
 
-            if (this.isInputValid(input)) {
+            if (ContactForm.isInputValid(input)) {
                 Util.removeClass(input, 'invalid');
             } else {
                 Util.addClass(input, 'invalid');
@@ -121,27 +184,12 @@ module pl {
         }
 
         /**
-         * Check validity of an input.
-         * @param {HTMLInputElement} input
-         * @returns {boolean} validity
+         * Add custom handler.
+         * @param {string} name before|error|success
+         * @param {function} handler
          */
-        public isInputValid(input: HTMLInputElement) {
-            let validation = input.dataset['validate'],
-                name  = input.name,
-                value = input.value;
-
-            switch (validation) {
-                case 'notEmpty':
-                    return Validator.notEmpty(value);
-                case 'phone':
-                    return Validator.phone(value);
-                case 'email':
-                    return Validator.email(value);
-                default:
-                    "console" in window
-                        && console.log("Unknown validation type: " + name);
-                    return true;
-            }
+        public addHandler(name, handler) {
+            this._handlers[name] = handler;
         }
 
         /**

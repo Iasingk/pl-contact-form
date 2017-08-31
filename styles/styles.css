@@ -39,11 +39,23 @@ h1 {
     padding: 10px 5px;
     outline: none;
     width: 100%;
+
+    -webkit-transition: background-color 373ms, border 373ms;
+    -moz-transition: background-color 373ms, border 373ms;
+    -ms-transition: background-color 373ms, border 373ms;
+    -o-transition: background-color 373ms, border 373ms;
+    transition: background-color 373ms, border 373ms;
 }
 
 .contact-form textarea {
     height: 130px;
     resize: none;
+}
+
+.contact-form input[type=text].invalid,
+.contact-form textarea.invalid {
+    background-color: rgba(255, 0, 0, .15);
+    border-bottom-color: #f00;
 }
 
 /* Chrome/Opera/Safari */
