@@ -65,16 +65,16 @@
 
         <form class="contact-form">
             <div class="input-container">
-                <input data-validate="notEmpty" name="Name" placeholder="Name" type="text" autocomplete="off" />
+                <input data-clue="Introduce un nombre válido." data-validate="notEmpty" name="Name" placeholder="Name" type="text" autocomplete="off" />
             </div>
             <div class="input-container">
-                <input data-validate="email" name="Email" placeholder="Email" type="text" autocomplete="off" />
+                <input data-clue="Introduce un email válido." data-validate="email" name="Email" placeholder="Email" type="text" autocomplete="off" />
             </div>
             <div class="input-container">
-                <input data-validate="phone" name="Phone" placeholder="Phone" type="text" autocomplete="off" />
+                <input data-clue="Introduce un teléfono válido." data-validate="phone" name="Phone" placeholder="Phone" type="text" autocomplete="off" />
             </div>
             <div class="input-container">
-                <textarea data-validate="notEmpty" name="Message" placeholder="Message"></textarea>
+                <textarea data-clue="Introduce tu mensaje." data-validate="notEmpty" name="Message" placeholder="Message"></textarea>
             </div>
 
             <input type="submit" value="Send">

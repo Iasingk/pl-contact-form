@@ -37,6 +37,41 @@ module pl {
             else elem.className = elem.className.replace(new RegExp("\\b" + className + "\\b", "g"), '');
         }
 
+        /**
+         * Insert an HTML structure before a given DOM tree element.
+         * @param {HTMLElement} elem
+         * @param {HTMLElement} refElem
+         */
+        public static insertBefore(elem: HTMLElement, refElem: HTMLElement) {
+            refElem.parentNode.insertBefore(elem, refElem);
+        }
+
+        /**
+         * Insert an HTML structure after a given DOM tree element.
+         * @param {HTMLElement} elem
+         * @param {HTMLElement} refElem
+         */
+        public static insertAfter(elem: HTMLElement, refElem: HTMLElement) {
+            refElem.parentNode.insertBefore(elem, refElem.nextSibling);
+        }
+
+        /**
+         * Utility method to extend defaults with user settings
+         * @param {object} source
+         * @param {object} settings
+         * @return {object}
+         */
+        static extendsDefaults(source: Object, settings: Object) {
+            let property;
+
+            for (property in settings) {
+                if (settings.hasOwnProperty(property))
+                    source[property] = settings[property];
+            }
+
+            return source;
+        }
+
     }
 
 }

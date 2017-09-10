@@ -34,6 +34,13 @@ module pl {
         private _letCloseWindow: boolean = true;
 
         /**
+         * Contains info for contact form.
+         * @type {object}
+         * @private
+         */
+        private _settings: Object = {};
+
+        /**
          * Check validity of an input.
          * @param {HTMLInputElement} input
          * @returns {boolean} validity
@@ -72,7 +79,8 @@ module pl {
                     RIGHT_ARROW_KEY: 39,
                     SELECT_KEY     : 93,
                     SHIFT_KEY      : 16,
-                    UP_ARROW_KEY   : 38
+                    UP_ARROW_KEY   : 38,
+                    TAB_KEY        : 9
                 };
 
             for (i in invalidKeys) {
@@ -100,15 +108,23 @@ module pl {
         }
 
         /**
-         *
+         * Create a contact form instance.
          * @param {HTMLElement} form
+         * @param {object} settings
          */
-        constructor(form: HTMLFormElement) {
+        constructor(form: HTMLFormElement, settings: Object = {}) {
             if (!(form instanceof HTMLElement))
                 throw 'Template is not an HTMLElement';
 
+            let defaults = {
+                method: 'POST',
+                url: 'send-mail.php',
+                async: true
+            };
+
             this._form = form;
             this._inputs = ContactForm.getInputs(this._form);
+            this._settings = Util.extendsDefaults(defaults, settings);
 
             this.beforeUnload = this.beforeUnload.bind(this);
             this.onInputChange = this.onInputChange.bind(this);
@@ -118,9 +134,19 @@ module pl {
         }
 
         /**
-         *
+         * Make an ajax request with contact form data.
          */
         private ajaxRequest() {
+            let req = new XMLHttpRequest();
+            let settings = this._settings;
+
+            req.onreadystatechange = function () {
+                if (this.readyState === 4 && this.status === 200)
+                    console.log(this.responseText);
+            }
+
+            req.open(settings['method'], settings['url'], settings['async']);
+            req.send();
 
         }
 
@@ -160,16 +186,54 @@ module pl {
          * @param {Event} ev
          */
         private onInputChange(ev) {
-            let input = ev.target;
             let code = ev.which || ev.keyCode || 0;
 
-            // Do nothing if a key is invalid.
+            // Do nothing if key is invalid.
             if (ContactForm.isInvalidKey(code)) return;
 
+            // Retrieve input and some attrs.
+            let input: HTMLInputElement = ev.target;
+            let type : String = input['type'];
+
+            // If input has an error get it.
+            let clueElem: HTMLElement = input['clue-elem'];
+            let clueText: string = "";
+
             if (ContactForm.isInputValid(input)) {
+
+                if (clueElem) {
+                    // Disappears and remove error element from DOM.
+                    clueElem.parentNode.removeChild(clueElem);
+
+                    // Set as null clue elem.
+                    input['clue-elem'] = null;
+                }
+
+                // Remove invalid class.
                 Util.removeClass(input, 'invalid');
+
             } else {
+
+                if (!clueElem) {
+                    // Retrieve input clue.
+                    clueText = input.dataset['clue'] || 'Inválido';
+
+                    // Create clue element.
+                    clueElem = document.createElement('span');
+                    clueElem.innerText = clueText;
+
+                    Util.addClass(clueElem, 'input-clue');
+
+                    // Store clue element in input.
+                    input['clue-elem'] = clueElem;
+
+                    Util.insertBefore(clueElem, input);
+
+                }
+
+                // Set invalid class.
                 Util.addClass(input, 'invalid');
+
             }
         }
 
@@ -180,7 +244,7 @@ module pl {
         private onSubmit(ev) {
             ev.preventDefault();
 
-            console.log('Form submitted');
+            this.ajaxRequest();
         }
 
         /**
