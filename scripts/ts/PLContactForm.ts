@@ -141,6 +141,7 @@ module pl {
             let settings = this._settings;
 
             req.onreadystatechange = function () {
+                console.log(this.readyState);
                 if (this.readyState === 4 && this.status === 200)
                     console.log(this.responseText);
             }
@@ -193,6 +194,15 @@ module pl {
 
             // Retrieve input and some attrs.
             let input: HTMLInputElement = ev.target;
+
+            this.toggleInputError(input);
+        }
+
+        /**
+         * Set or remove error from input
+         * @param {HTMLElement} input
+         */
+        private toggleInputError(input) {
             let type : String = input['type'];
 
             // If input has an error get it.
@@ -244,7 +254,25 @@ module pl {
         private onSubmit(ev) {
             ev.preventDefault();
 
-            this.ajaxRequest();
+            let form  = ev.target,
+                valid = true;
+
+            // Validate inputs before submit.
+            [].forEach.call(this._inputs, (input) => {
+                if (!ContactForm.isInputValid(input)) {
+                    this.toggleInputError(input);
+                    valid = false;
+                }
+            });
+
+            if (!valid) {
+                throw "There are invalid inputs.";
+
+            } else {
+
+                this.ajaxRequest();
+            }
+
         }
 
         /**
