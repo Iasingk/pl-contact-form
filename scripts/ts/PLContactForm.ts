@@ -1,5 +1,7 @@
 /**
  * Created by cesarmejia on 20/08/2017.
+ * Implement: 1. Hide Loader
+ *            2. Show Loader
  */
 module pl {
 
@@ -69,21 +71,20 @@ module pl {
          * @param {number} code
          */
         static isInvalidKey(code: number) {
-            let i,
-                invalidKeys = {
-                    ALT_KEY        : 18,
-                    CAPS_LOCK_KEY  : 20,
-                    CTRL_KEY       : 17,
-                    DOWN_ARROW_KEY : 40,
-                    LEFT_ARROW_KEY : 37,
-                    RIGHT_ARROW_KEY: 39,
-                    SELECT_KEY     : 93,
-                    SHIFT_KEY      : 16,
-                    UP_ARROW_KEY   : 38,
-                    TAB_KEY        : 9
-                };
+            let i, invalidKeys = [
+                    Key.ALT,
+                    Key.CAPS_LOCK,
+                    Key.CTRL,
+                    Key.DOWN_ARROW,
+                    Key.LEFT_ARROW,
+                    Key.RIGHT_ARROW,
+                    Key.SELECT,
+                    Key.SHIFT,
+                    Key.UP_ARROW,
+                    Key.TAB
+                ];
 
-            for (i in invalidKeys) {
+            for (i = 0; i < invalidKeys.length; i++) {
                 if (invalidKeys[i] === code)
                     return true;
             }
@@ -135,19 +136,22 @@ module pl {
 
         /**
          * Make an ajax request with contact form data.
+         * @param {object} data
          */
-        private ajaxRequest() {
+        private ajaxRequest(data) {
             let req = new XMLHttpRequest();
             let settings = this._settings;
+            let dataString = `data=${JSON.stringify(data)}`;
 
             req.onreadystatechange = function () {
                 console.log(this.readyState);
                 if (this.readyState === 4 && this.status === 200)
                     console.log(this.responseText);
-            }
+            };
 
             req.open(settings['method'], settings['url'], settings['async']);
-            req.send();
+            req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            req.send(dataString);
 
         }
 
@@ -159,6 +163,20 @@ module pl {
             if (!this._letCloseWindow) {
                 return 'Sending message';
             }
+        }
+
+        /**
+         * Gets an object with form values.
+         * @returns {object}
+         */
+        private getFormData() {
+            let data = { };
+
+            [].forEach.call(this._inputs, (input) => {
+                data[input.name] = input.value
+            });
+
+            return data;
         }
 
         /**
@@ -270,7 +288,12 @@ module pl {
 
             } else {
 
-                this.ajaxRequest();
+                let data = {
+                    host: location.hostname,
+                    data: this.getFormData()
+                };
+
+                this.ajaxRequest(data);
             }
 
         }
