@@ -174,7 +174,7 @@ module pl {
 
             let defaults = {
                 method: 'POST',
-                url: 'send-mail.php',
+                url: 'send-mai.php',
                 async: true
             };
 
@@ -192,6 +192,10 @@ module pl {
         private ajaxRequest(data) {
             let settings = this._settings;
             let dataString = `data=${JSON.stringify(data)}`;
+
+            /* this._req.onreadystatechange = function () {
+
+            }; */
 
             this._req.open(settings['method'], settings['url'], settings['async']);
             this._req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -245,6 +249,9 @@ module pl {
         private handleSuccess(ev) {
             console.log('success');
             console.log(ev);
+
+            console.log(this._req.response);
+            console.log(this._req.responseText);
         }
 
         /**
@@ -278,7 +285,7 @@ module pl {
 
             // Attach handlers to request events.
             this._req.addEventListener('error', this.handleFailed, false);
-            this._req.addEventListener('progress', this.handleProgress, false);
+            this._req.addEventListener('loadstart', this.handleProgress, false);
             this._req.addEventListener('load', this.handleSuccess, false);
 
         }
