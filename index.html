@@ -86,9 +86,21 @@
             (function() {
                 'use strict';
 
-                var contactForm = document.querySelector('.contact-form');
+                var formElement = document.querySelector('.contact-form');
+                var form = new pl.ContactForm(formElement);
 
-                window.form = new pl.ContactForm(contactForm);
+                form.error.add((status, statusText) => {
+                    console.log('There was an error. \nStatus: %s\nStatusText: %s', status, statusText);
+                });
+
+                form.sending.add(() => {
+                    console.log('Sending...');
+                });
+
+                form.success.add((response, status, statusText) => {
+                    console.log('The message has been sent successfuly. \nStatus: %s\nStatusText: %s', status, statusText);
+                    console.log(response);
+                });
 
             })();
         </script>
