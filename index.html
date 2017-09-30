@@ -60,26 +60,32 @@
     </head>
     <body>
 
-        <!-- Contact Form -->
-        <h1>Contact Form</h1>
+        <div class="contact-form-wrapper">
+            <!-- Contact Form -->
+            <h1>Contact Form</h1>
 
-        <form class="contact-form">
-            <div class="input-container">
-                <input data-clue="Introduce un nombre válido." data-validate="notEmpty" name="Name" placeholder="Name" type="text" autocomplete="off" />
-            </div>
-            <div class="input-container">
-                <input data-clue="Introduce un email válido." data-validate="email" name="Email" placeholder="Email" type="text" autocomplete="off" />
-            </div>
-            <div class="input-container">
-                <input data-clue="Introduce un teléfono válido." data-validate="phone" name="Phone" placeholder="Phone" type="text" autocomplete="off" />
-            </div>
-            <div class="input-container">
-                <textarea data-clue="Introduce tu mensaje." data-validate="notEmpty" name="Message" placeholder="Message"></textarea>
-            </div>
+            <form class="contact-form">
+                <div class="input-container">
+                    <label for="contact-form-name">Nombre:</label>
+                    <input data-clue="Introduce un nombre válido." data-validate="notEmpty" id="contact-form-name" name="Name" type="text" autocomplete="off" />
+                </div>
+                <div class="input-container">
+                    <label for="contact-form-email">Email:</label>
+                    <input data-clue="Introduce un email válido." data-validate="email" id="contact-form-email" name="Email" type="text" autocomplete="off" />
+                </div>
+                <div class="input-container">
+                    <label for="contact-form-phone">Teléfono</label>
+                    <input data-clue="Introduce un teléfono válido." data-validate="phone" id="contact-form-phone" name="Phone" type="text" autocomplete="off" />
+                </div>
+                <div class="input-container">
+                    <label for="contact-form-message">Mensaje</label>
+                    <textarea data-clue="Introduce tu mensaje." data-validate="notEmpty" id="contact-form-message" name="Message"></textarea>
+                </div>
 
-            <input type="submit" value="Send">
-        </form>
-        <!-- /.Contact Form -->
+                <input type="submit" value="Enviar">
+            </form>
+            <!-- /.Contact Form -->
+        </div>
 
         <script src="scripts/js/pl-contact-form.min.js"></script>
         <script>

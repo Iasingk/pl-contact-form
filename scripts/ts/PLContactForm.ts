@@ -9,6 +9,12 @@ module pl {
 
         // region Fields
         /**
+         * Disable mode.
+         * @type {boolean}
+         */
+        private _disabled: boolean;
+
+        /**
          * Error event.
          * @type {Event}
          */
@@ -121,6 +127,20 @@ module pl {
 
             // Show or hide error.
             this.toggleInputError(input);
+        }
+
+        /**
+         * Disable or enable form.
+         */
+        private disableForm() {
+            if (this._disabled)
+                Util.addClass(this._form, 'disabled');
+            else
+                Util.removeClass(this._form, 'disabled');
+
+            [].forEach.call(this._inputs, input => {
+                input.disabled = this._disabled;
+            });
         }
 
         /**
@@ -342,11 +362,11 @@ module pl {
             // Maybe submit is called manually and there is no ev.
             ev && ev.preventDefault();
 
-            if (!this.isFormValid()) {
-                throw "There are invalid inputs.";
+            // If form is disabled, it's possible that contact form is sending a request.
+            if (this._disabled) return;
 
-            } else {
-
+            // Validate form, if is valid make the request to the server.
+            if (this.isFormValid()) {
                 let data = {
                     host: location.hostname,
                     data: this.getFormValues()
@@ -369,6 +389,7 @@ module pl {
                 this._error.fire(status, statusText);
             }
 
+            this.disabled = false;
             this._letCloseWindow = true;
         }
 
@@ -380,6 +401,7 @@ module pl {
                 this._sending.fire();
             }
 
+            this.disabled = true;
             this._letCloseWindow = false;
         }
 
@@ -394,13 +416,32 @@ module pl {
                 this._success.fire(response, status, statusText);
             }
 
+            this.disabled = false;
             this._letCloseWindow = true;
-
             this.reset();
         }
         // endregion
 
         // region Properties
+        /**
+         * Get disable mode.
+         * @returns {boolean}
+         */
+        public get disabled() {
+            return this._disabled;
+        }
+
+        /**
+         * Set disable mode.
+         * @param {boolean} disabled
+         */
+        public set disabled(disabled) {
+            if (disabled !== this._disabled) {
+                this._disabled = disabled;
+                this.disableForm();
+            }
+        }
+
         /**
          * Get error event.
          * @returns {Event}
