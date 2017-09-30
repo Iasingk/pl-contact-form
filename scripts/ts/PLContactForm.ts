@@ -73,9 +73,8 @@ module pl {
                 throw 'Template is not an HTMLElement';
 
             let defaults = {
-                method: 'POST',
-                url: 'send-mail.php',
-                async: true
+                url    : 'process-ajax.php',
+                useAjax: true
             };
 
             this._form = form;
@@ -91,12 +90,14 @@ module pl {
          * @param {object} data
          */
         private ajaxRequest(data) {
+            let async = true;
+            let method = 'POST';
             let settings = this._settings;
             let dataString = `data=${JSON.stringify(data)}`;
 
             this.onSending();
 
-            this._req.open(settings['method'], settings['url'], settings['async']);
+            this._req.open(method, settings['url'], async);
             this._req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
             this._req.send(dataString);
 
@@ -359,20 +360,31 @@ module pl {
          * @param {Event} ev
          */
         public submit(ev) {
-            // Maybe submit is called manually and there is no ev.
-            ev && ev.preventDefault();
 
-            // If form is disabled, it's possible that contact form is sending a request.
-            if (this._disabled) return;
-
-            // Validate form, if is valid make the request to the server.
+            // Validate form.
             if (this.isFormValid()) {
-                let data = {
-                    host: location.hostname,
-                    data: this.getFormValues()
-                };
 
-                this.ajaxRequest(data);
+                // If we're using ajax make other validations. Else let the flow keeps going.
+                if (this._settings['useAjax']) {
+
+                    // If form is disabled, it's possible that contact form is sending a request.
+                    if (this._disabled) return;
+
+                    // Maybe submit is called manually and there is no ev.
+                    ev && ev.preventDefault();
+
+                    let data = {
+                        host: location.hostname,
+                        data: this.getFormValues()
+                    };
+
+                    this.ajaxRequest(data);
+
+                }
+
+            } else {
+                // Maybe submit is called manually and there is no ev.
+                ev && ev.preventDefault();
             }
 
         }

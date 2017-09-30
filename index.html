@@ -64,7 +64,7 @@
             <!-- Contact Form -->
             <h1>Contact Form</h1>
 
-            <form class="contact-form">
+            <form class="contact-form" method="POST" action="process-form.php">
                 <div class="input-container">
                     <label for="contact-form-name">Nombre:</label>
                     <input data-clue="Introduce un nombre válido." data-validate="notEmpty" id="contact-form-name" name="Name" type="text" autocomplete="off" />
@@ -93,7 +93,10 @@
                 'use strict';
 
                 var formElement = document.querySelector('.contact-form');
-                var form = new pl.ContactForm(formElement);
+                var form = new pl.ContactForm(formElement, {
+                    url    : 'process-ajax.php',
+                    useAjax: true
+                });
 
                 form.error.add((status, statusText) => {
                     console.log('There was an error. \nStatus: %s\nStatusText: %s', status, statusText);
@@ -107,6 +110,8 @@
                     console.log('The message has been sent successfuly. \nStatus: %s\nStatusText: %s', status, statusText);
                     console.log(response);
                 });
+
+                window.form = form;
 
             })();
         </script>

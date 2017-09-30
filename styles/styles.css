@@ -77,11 +77,6 @@ h1 {
     resize: none;
 }
 
-.contact-form input[type=text].invalid,
-.contact-form textarea.invalid {
-    border-bottom-color: #c71515;
-}
-
 .contact-form input[type=text]:disabled,
 .contact-form textarea:disabled {
     opacity: .75;
@@ -90,6 +85,11 @@ h1 {
 .contact-form input[type=text]:focus,
 .contact-form textarea:focus {
     border-bottom: 2px solid #E0F2F1;
+}
+
+.contact-form input[type=text].invalid,
+.contact-form textarea.invalid {
+    border-bottom-color: #c71515;
 }
 
 /* Chrome/Opera/Safari */
@@ -127,6 +127,7 @@ h1 {
 }
 
 .contact-form.disabled input[type=submit] {
+    background-color: #00695C;
     opacity: .75;
     pointer-events: none;
 }
