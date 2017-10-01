@@ -25,8 +25,9 @@
     "gulp": "^3.9.1",
     "gulp-concat": "^2.6.1",
     "gulp-livereload": "^3.8.1",
+    "gulp-plumber": "^1.1.0",
     "gulp-typescript": "^3.2.2",
     "gulp-uglify": "^3.0.0",
-    "typescript": "^2.4.2"
+    "typescript": "^2.5.3"
   }
 }
