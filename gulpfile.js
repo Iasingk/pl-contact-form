@@ -26,7 +26,7 @@ let destPath = {
 /**
  * Reload on change.
  */
-gulp.task('reload', () => {
+gulp.task('reload', ['ts'], () => {
     gulp.src(srcPath.root)
         .pipe(livereload());
 });

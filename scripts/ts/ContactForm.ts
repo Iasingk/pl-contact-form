@@ -68,7 +68,7 @@ module pl {
          */
         constructor(form: HTMLFormElement, settings: Object = {}) {
             if (!(form instanceof HTMLElement))
-                throw 'Template is not an HTMLElement';
+                throw 'Template is not an HTMLFormElement';
 
             let defaults = {
                 url    : 'process-ajax.php',
