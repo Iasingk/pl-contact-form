@@ -65,24 +65,28 @@
             <h1>Contact Form</h1>
 
             <form class="contact-form" method="POST" action="process-form.php">
-                <div class="input-container">
-                    <label for="contact-form-name">Nombre:</label>
-                    <input data-clue="Introduce un nombre válido." data-validate="notEmpty" id="contact-form-name" name="Name" type="text" autocomplete="off" />
-                </div>
-                <div class="input-container">
-                    <label for="contact-form-email">Email:</label>
-                    <input data-clue="Introduce un email válido." data-validate="email" id="contact-form-email" name="Email" type="text" autocomplete="off" />
-                </div>
-                <div class="input-container">
-                    <label for="contact-form-phone">Teléfono</label>
-                    <input data-clue="Introduce un teléfono válido." data-validate="phone" id="contact-form-phone" name="Phone" type="text" autocomplete="off" />
-                </div>
-                <div class="input-container">
-                    <label for="contact-form-message">Mensaje</label>
-                    <textarea data-clue="Introduce tu mensaje." data-validate="notEmpty" id="contact-form-message" name="Message"></textarea>
-                </div>
+                <div class="message"></div>
 
-                <input type="submit" value="Enviar">
+                <div class="wrapper">
+                    <div class="input-container">
+                        <label for="contact-form-name">Nombre:</label>
+                        <input data-clue="Introduce un nombre válido." data-validate="notEmpty" id="contact-form-name" name="Name" type="text" autocomplete="off" />
+                    </div>
+                    <div class="input-container">
+                        <label for="contact-form-email">Email:</label>
+                        <input data-clue="Introduce un email válido." data-validate="email" id="contact-form-email" name="Email" type="text" autocomplete="off" />
+                    </div>
+                    <div class="input-container">
+                        <label for="contact-form-phone">Teléfono</label>
+                        <input data-clue="Introduce un teléfono válido." data-validate="phone" id="contact-form-phone" name="Phone" type="text" autocomplete="off" />
+                    </div>
+                    <div class="input-container">
+                        <label for="contact-form-message">Mensaje</label>
+                        <textarea data-clue="Introduce tu mensaje." data-validate="notEmpty" id="contact-form-message" name="Message"></textarea>
+                    </div>
+
+                    <input type="submit" value="Enviar">
+                </div>
             </form>
             <!-- /.Contact Form -->
         </div>
@@ -92,26 +96,79 @@
             (function() {
                 'use strict';
 
+                /**
+                 * Show or hide element
+                 * @param {HTMLElement} element
+                 * @param {boolean} show
+                 */
+                function showElement(element, show) {
+                    element.style.display = show ? 'block' : 'none';
+                }
+
+                /**
+                 * Handle form error event.
+                 */
+                function handleError(status, statusText) {
+                    // Show message in console.
+                    console.log('There was an error. \nStatus: %s\nStatusText: %s', status, statusText);
+
+                    message.innerText = "Ocurrió un error, por favor intentalo más tarde.";
+
+                    setTimeout(function() {
+                        showElement(wrapper, true);
+                        showElement(message, false);
+
+                        message.innerText = "";
+                    }, 3000);
+                }
+
+                /**
+                 * Handle form sending event.
+                 */
+                function handleSending() {
+                    // Show message in console.
+                    console.log('Sending...');
+
+                    showElement(wrapper, false);
+                    showElement(message, true);
+
+                    message.innerText = "Enviando... ";
+                }
+
+                /**
+                 * Handle form success event.
+                 */
+                function handleSuccess(response, status, statusText) {
+                    // Show message in console.
+                    console.log('The message has been sent successfuly. \nStatus: %s\nStatusText: %s', status, statusText);
+                    console.log(response);
+
+                    if (parseInt(response) === 1) {
+                        message.innerText = "Tu mensaje ha sido enviado correctamente.";
+
+                        setTimeout(function() {
+                            showElement(wrapper, true);
+                            showElement(message, false);
+
+                            message.innerText = "";
+                        }, 3000);
+                    } else {
+                        handleError(status, statusText);
+                    }
+                }
+
+                
                 var formElement = document.querySelector('.contact-form');
+                var message = formElement.querySelector('.message');
+                var wrapper = formElement.querySelector('.wrapper');
                 var form = new pl.ContactForm(formElement, {
                     url    : 'process-ajax.php',
                     useAjax: true
                 });
 
-                form.error.add((status, statusText) => {
-                    console.log('There was an error. \nStatus: %s\nStatusText: %s', status, statusText);
-                });
-
-                form.sending.add(() => {
-                    console.log('Sending...');
-                });
-
-                form.success.add((response, status, statusText) => {
-                    console.log('The message has been sent successfuly. \nStatus: %s\nStatusText: %s', status, statusText);
-                    console.log(response);
-                });
-
-                window.form = form;
+                form.error.add(handleError);
+                form.sending.add(handleSending);
+                form.success.add(handleSuccess);
 
             })();
         </script>

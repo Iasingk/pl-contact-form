@@ -424,7 +424,8 @@ module pl {
 
             this.disabled = false;
             this._letCloseWindow = true;
-            this.reset();
+
+            parseInt(response) === 1 && this.reset();
         }
         // endregion
 

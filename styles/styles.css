@@ -28,6 +28,13 @@ h1 {
 .contact-form {
     margin: 0 auto;
     max-width: 480px;
+    min-height: 200px;
+}
+
+.contact-form .message {
+    display: none;
+    padding: 1em;
+    text-align: center;
 }
 
 .contact-form .input-container {
