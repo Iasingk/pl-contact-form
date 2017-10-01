@@ -1,7 +1,5 @@
 /**
  * Created by cesarmejia on 20/08/2017.
- * TODO: 1. Add functionality to send form synchronous.
- *       2. Consider sending files
  */
 module pl {
 
@@ -204,23 +202,19 @@ module pl {
          * Check validity of an input.
          * @param {HTMLInputElement} input
          * @returns {boolean} validity
+         * TODO: Try to validate more than 1 validations, maybe if we separate with "|" character.
          */
         private isInputValid(input: HTMLInputElement) {
             let validate = input.dataset['validate'],
                 name  = input.name,
                 value = input.value;
 
-            switch (validate) {
-                case 'notEmpty':
-                    return Validator.notEmpty(value);
-                case 'phone':
-                    return Validator.phone(value);
-                case 'email':
-                    return Validator.email(value);
-                default:
-                    "console" in window
-                    && console.log("Unknown validation type: " + name);
-                    return true;
+            try {
+                return Validator[validate].call(this, value);
+            } catch(e) {
+                "console" in window
+                && console.log("Unknown \"%s\" validation in \"%s\" input", validate, name);
+                return false;
             }
         }
 
