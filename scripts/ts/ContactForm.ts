@@ -333,8 +333,9 @@ module pl {
             let valid = true;
 
             [].forEach.call(this._inputs, input => {
+                this.toggleInputError(input);
+
                 if (!this.isInputValid(input)) {
-                    this.toggleInputError(input);
                     valid = false;
                 }
             });
