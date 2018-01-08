@@ -6,17 +6,12 @@ module pl {
     export class ContactForm {
 
         // region Fields
+
         /**
          * Disable mode.
          * @type {boolean}
          */
         private _disabled: boolean;
-
-        /**
-         * Error event.
-         * @type {Event}
-         */
-        private _error: Event;
 
         /**
          * Points to form element.
@@ -43,22 +38,11 @@ module pl {
         private _req: XMLHttpRequest = new XMLHttpRequest;
 
         /**
-         * Sending event.
-         * @type {Event}
-         */
-        private _sending: Event;
-
-        /**
          * Contains info for contact form.
          * @type {object}
          */
         private _settings: Object = {};
 
-        /**
-         * Success event.
-         * @type {Event}
-         */
-        private _success: Event;
         // endregion
 
         /**
@@ -83,6 +67,7 @@ module pl {
         }
 
         // region Private Methods
+
         /**
          * Make an ajax request with contact form data.
          * @param {object} data
@@ -188,10 +173,8 @@ module pl {
             // Attach on submit handler to form.
             this._form.addEventListener('submit', this.submit, false);
 
-
             // Attach onbeforeunload handler.
             window.onbeforeunload = this.beforeUnload;
-
 
             // Attach handler to state change of request.
             this._req.onreadystatechange = this.handleReadyStateChange;
@@ -202,20 +185,45 @@ module pl {
          * Check validity of an input.
          * @param {HTMLInputElement} input
          * @returns {boolean} validity
-         * TODO: Try to validate more than 1 validations, maybe if we separate with "|" character.
          */
         private isInputValid(input: HTMLInputElement) {
-            let validate = input.dataset['validate'],
-                name  = input.name,
-                value = input.value;
+            if ("string" === typeof input.dataset['validate']) {
+                // Validation rules could be in this form "notEmpty|count:3"
+                let rules: Array<string> = (<string>input.dataset['validate']).split('|'),
+                    name: string = input.name,
+                    value: string = input.value,
+                    valid: boolean = true;
 
-            try {
-                return Validator[validate].call(this, value);
-            } catch(e) {
-                "console" in window
-                && console.log("Unknown \"%s\" validation in \"%s\" input", validate, name);
-                return false;
+                for (let i = 0; i < rules.length; i++) {
+                    let rule: string = rules[i],
+                        args: string;
+
+                    try {
+                        if (rules[i].indexOf(":") > -1) {
+                            let array;
+
+                            rule = rules[i].slice(0, rules[i].indexOf(":"));
+                            args = rules[i].slice(rules[i].indexOf(":") + 1);
+
+                            array = args.split(',');
+                            array.unshift(value);
+
+                            valid = Validator[rule].apply(this, array);
+                        } else {
+                            valid = Validator[rule].call(this, value);
+                        }
+                    } catch (e) {
+                        "console" in window
+                        && console.log("Unknown \"%s\" validation in \"%s\" input", rule, name);
+                    }
+
+                    if (!valid) { break; }
+                }
+
+                return valid;
             }
+
+            return true;
         }
 
         /**
@@ -251,6 +259,10 @@ module pl {
         private toggleInputError(input) {
             let type : String = input['type'];
 
+            // Points to parent node.
+            let inputParent: HTMLElement = input.parentNode;
+            let hasInputContainer: boolean = Util.hasClass(inputParent, 'input-container');
+
             // If input has an error get it.
             let clueElem: HTMLElement = input['clue-elem'];
             let clueText: string = "";
@@ -267,6 +279,9 @@ module pl {
 
                 // Remove invalid class.
                 Util.removeClass(input, 'invalid');
+
+                // Unmark as invalid input parent if has class ".input-container"
+                hasInputContainer && Util.removeClass(inputParent, 'invalid');
 
             } else {
 
@@ -285,16 +300,24 @@ module pl {
 
                     Util.insertBefore(clueElem, input);
 
+                    // Notify that an input has a error.
+                    this.onInputError(input, clueText);
+
                 }
 
                 // Set invalid class.
                 Util.addClass(input, 'invalid');
 
+                // Mark as invalid input parent if has class ".input-container"
+                hasInputContainer && Util.addClass(inputParent, 'invalid');
+
             }
         }
+
         // endregion
 
         // region Methods
+
         /**
          * Gets all values of inputs in JSON format.
          * @returns {object}
@@ -383,9 +406,11 @@ module pl {
             }
 
         }
+
         // endregion
 
         // region Events
+
         /**
          * Fires when contact form request has an error.
          * @param {number} status
@@ -398,6 +423,17 @@ module pl {
 
             this.disabled = false;
             this._letCloseWindow = true;
+        }
+
+        /**
+         * Fires when an input has an error.
+         * @param {HTMLInputElement} input
+         * @param {string} clueText
+         */
+        private onInputError(input, clueText) {
+            if (this._inputError) {
+                this._inputError.fire(input, clueText);
+            }
         }
 
         /**
@@ -428,9 +464,83 @@ module pl {
 
             parseInt(response) === 1 && this.reset();
         }
+
         // endregion
 
         // region Properties
+
+        /**
+         * Error event.
+         * @type {pl.Event}
+         */
+        private _error: Event;
+
+        /**
+         * Get error event.
+         * @returns {pl.Event}
+         */
+        public get error() {
+            if (!this._error) {
+                this._error = new Event();
+            }
+
+            return this._error;
+        }
+
+        /**
+         * Input error event.
+         * @type {pl.Event}
+         */
+        private _inputError: Event;
+
+        /**
+         * Get input error event.
+         * @returns {pl.Event}
+         */
+        public get inputError() {
+            if (!this._inputError) {
+                this._inputError = new Event();
+            }
+
+            return this._inputError;
+        }
+
+        /**
+         * Sending event.
+         * @type {pl.Event}
+         */
+        private _sending: Event;
+
+        /**
+         * Get sending event
+         * @returns {pl.Event}
+         */
+        public get sending() {
+            if (!this._sending) {
+                this._sending = new Event();
+            }
+
+            return this._sending;
+        }
+
+        /**
+         * Success event.
+         * @type {pl.Event}
+         */
+        private _success: Event;
+
+        /**
+         * Get success event.
+         * @returns {pl.Event}
+         */
+        public get success() {
+            if (!this._success) {
+                this._success = new Event();
+            }
+
+            return this._success;
+        }
+
         /**
          * Get disable mode.
          * @returns {boolean}
@@ -450,41 +560,6 @@ module pl {
             }
         }
 
-        /**
-         * Get error event.
-         * @returns {Event}
-         */
-        public get error() {
-            if (!this._error) {
-                this._error = new Event();
-            }
-
-            return this._error;
-        }
-
-        /**
-         * Get sending event
-         * @returns {Event}
-         */
-        public get sending() {
-            if (!this._sending) {
-                this._sending = new Event();
-            }
-
-            return this._sending;
-        }
-
-        /**
-         * Get success event.
-         * @returns {Event}
-         */
-        public get success() {
-            if (!this._success) {
-                this._success = new Event();
-            }
-
-            return this._success;
-        }
         // endregion
 
     }

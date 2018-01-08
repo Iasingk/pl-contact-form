@@ -70,7 +70,7 @@
                 <div class="wrapper">
                     <div class="input-container">
                         <label for="contact-form-name">Nombre:</label>
-                        <input data-clue="Introduce un nombre válido." data-validate="notEmpty" id="contact-form-name" name="Name" type="text" autocomplete="off" />
+                        <input data-clue="Introduce un nombre válido." data-validate="notEmpty|range:3,5" id="contact-form-name" name="Name" type="text" autocomplete="off" />
                     </div>
                     <div class="input-container">
                         <label for="contact-form-email">Email:</label>
@@ -82,7 +82,7 @@
                     </div>
                     <div class="input-container">
                         <label for="contact-form-message">Mensaje</label>
-                        <textarea data-clue="Introduce tu mensaje." data-validate="notEmpty" id="contact-form-message" name="Message"></textarea>
+                        <textarea data-clue="Introduce tu mensaje." data-validate="notEmpty|range:10" id="contact-form-message" name="Message"></textarea>
                     </div>
 
                     <input type="submit" value="Enviar">
@@ -107,6 +107,8 @@
 
                 /**
                  * Handle form error event.
+                 * @param {number} status
+                 * @param {string} statusText
                  */
                 function handleError(status, statusText) {
                     // Show message in console.
@@ -120,6 +122,15 @@
 
                         message.innerText = "";
                     }, 3000);
+                }
+
+                /**
+                 * Handle input error event.
+                 * @param {HTMLInputElement} input
+                 * @param {string} clueText
+                 */
+                function handleInputError(input, clueText) {
+                    /* Personalize how you want to show input error. */
                 }
 
                 /**
@@ -137,6 +148,9 @@
 
                 /**
                  * Handle form success event.
+                 * @param {object} response
+                 * @param {string} status
+                 * @param {string} statusText
                  */
                 function handleSuccess(response, status, statusText) {
                     // Show message in console.
@@ -169,6 +183,7 @@
                 form.error.add(handleError);
                 form.sending.add(handleSending);
                 form.success.add(handleSuccess);
+                form.inputError.add(handleInputError);
 
             })();
         </script>

@@ -50,7 +50,7 @@ h1 {
 
 .contact-form .input-clue {
     bottom: 5px;
-    color: #c71515;
+    color: #940707;
     font-size: 13px;
     font-style: italic;
     font-weight: 600;
@@ -96,7 +96,7 @@ h1 {
 
 .contact-form input[type=text].invalid,
 .contact-form textarea.invalid {
-    border-bottom-color: #c71515;
+    border-bottom-color: #940707;
 }
 
 /* Chrome/Opera/Safari */

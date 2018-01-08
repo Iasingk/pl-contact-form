@@ -7,6 +7,23 @@ module pl {
     export class Validator {
 
         /**
+         * Validate if value has an specific length.
+         * @param {any} value
+         * @param {any} length
+         */
+        static count (value: any, length: any): boolean {
+            let string = Validator.toString(value);
+
+            if (string === "undefined"
+                || string === "null"
+                || string === "NaN"
+                || string === "Infinity"
+            ) return false;
+
+            return string.length === length;
+        }
+
+        /**
          * Validate if value is a valid credit card number.
          * @param {string} value
          * @returns {boolean}
@@ -98,23 +115,6 @@ module pl {
         }
 
         /**
-         * Validate if value has an specific length.
-         * @param {any} value
-         * @param {number} length
-         */
-        static length (value: any, length: number): boolean {
-            let string = Validator.toString(value);
-
-            if (string === "undefined"
-                || string === "null"
-                || string === "NaN"
-                || string === "Infinity"
-            ) return false;
-
-            return string.length === length;
-        }
-
-        /**
          * Validate if value is not empty.
          * @param {string} value
          * @returns {boolean}
@@ -136,6 +136,32 @@ module pl {
                 return false;
 
             return value.replace(/[^\d]/g, '').length === 10;
+        }
+
+        /**
+         * Validate the length of a string in a range.
+         * @param {string} value
+         * @param {number} min
+         * @param {number} max
+         * @returns {boolean}
+         */
+        static range (value: string, min: number, max?: number): boolean {
+            let string: string = Validator.toString(value);
+
+            if (string === "undefined"
+                || string === "null"
+                || string === "NaN"
+                || string === "Infinity"
+            ) return false;
+
+            min = Validator.toInteger(<string>min);
+            max = Validator.toInteger(<string>max);
+
+            if ("number" === typeof max) {
+                return string.length >= min && string.length <= max;
+            } else {
+                return string.length >= min;
+            }
         }
 
         /**
@@ -184,6 +210,24 @@ module pl {
          */
         static isString (value: any): boolean {
             return "string" === typeof value;
+        }
+
+        /**
+         * Parse given value to float.
+         * @param {string} value
+         * @returns {number}
+         */
+        static toFloat (value: string): number {
+            return parseFloat(value);
+        }
+
+        /**
+         * Parse given value to integer.
+         * @param {string} value
+         * @returns {number}
+         */
+        static toInteger (value: string): number {
+            return parseInt(value);
         }
 
         /**
