@@ -14,18 +14,6 @@ module pl {
         private _disabled: boolean;
 
         /**
-         * Points to form element.
-         * @type {HTMLFormElement}
-         */
-        private _form: HTMLFormElement;
-
-        /**
-         * Points to form inputs.
-         * @type {NodeListOf<Element>}
-         */
-        private _inputs: NodeListOf<Element>;
-
-        /**
          * Determine if window could close or not.
          * @type {boolean}
          */
@@ -60,7 +48,6 @@ module pl {
             };
 
             this._form = form;
-            this._inputs = this.getInputs();
             this._settings = Util.extendsDefaults(defaults, settings);
 
             this.initializeEvents();
@@ -103,6 +90,8 @@ module pl {
         private changed(ev) {
             let code = ev.which || ev.keyCode || 0;
 
+            console.log('changed..');
+
             // Do nothing if key is invalid.
             if (this.isInvalidKey(code)) return;
 
@@ -118,11 +107,11 @@ module pl {
          */
         private disableForm() {
             if (this._disabled)
-                Util.addClass(this._form, 'disabled');
+                Util.addClass(this.form, 'disabled');
             else
-                Util.removeClass(this._form, 'disabled');
+                Util.removeClass(this.form, 'disabled');
 
-            [].forEach.call(this._inputs, input => {
+            [].forEach.call(this.inputs, input => {
                 input.disabled = this._disabled;
             });
         }
@@ -162,7 +151,7 @@ module pl {
 
 
             // Attach changed handler to each input in form.
-            [].forEach.call(this._inputs, (input) => {
+            [].forEach.call(this.inputs, (input) => {
                 if (input.type === 'text' || input.tagName.toLowerCase() === 'textarea')
                     input.addEventListener('keyup', this.changed, false);
 
@@ -171,7 +160,7 @@ module pl {
 
 
             // Attach on submit handler to form.
-            this._form.addEventListener('submit', this.submit, false);
+            this.form.addEventListener('submit', this.submit, false);
 
             // Attach onbeforeunload handler.
             window.onbeforeunload = this.beforeUnload;
@@ -192,33 +181,54 @@ module pl {
                 let rules: Array<string> = (<string>input.dataset['validate']).split('|'),
                     name: string = input.name,
                     value: string = input.value,
-                    valid: boolean = true;
+                    type: string = input.type,
+                    valid: boolean = false;
 
-                for (let i = 0; i < rules.length; i++) {
-                    let rule: string = rules[i],
-                        args: string;
+                // region Validate checkbox input.
+                if (type === "checkbox") {
 
-                    try {
-                        if (rules[i].indexOf(":") > -1) {
-                            let array;
 
-                            rule = rules[i].slice(0, rules[i].indexOf(":"));
-                            args = rules[i].slice(rules[i].indexOf(":") + 1);
-
-                            array = args.split(',');
-                            array.unshift(value);
-
-                            valid = Validator[rule].apply(this, array);
-                        } else {
-                            valid = Validator[rule].call(this, value);
-                        }
-                    } catch (e) {
-                        "console" in window
-                        && console.log("Unknown \"%s\" validation in \"%s\" input", rule, name);
-                    }
-
-                    if (!valid) { break; }
                 }
+                // endregion
+
+                // region Validate radio input.
+                else if (type === "radio") {
+
+                }
+                // endregion
+
+                // region Validate select and text input.
+                else {
+                    for (let i = 0; i < rules.length; i++) {
+                        let rule: string = rules[i],
+                            args: string,
+                            array: Array<string>;
+
+                        try {
+                            if (rules[i].indexOf(":") > -1) {
+                                rule = rules[i].slice(0, rules[i].indexOf(":"));
+                                args = rules[i].slice(rules[i].indexOf(":") + 1);
+
+                                array = args.split(',');
+                                array.unshift(value);
+
+                            } else {
+                                array = [value];
+
+                            }
+
+                            // Validate!!
+                            valid = Validator[rule].apply(this, array);
+
+                        } catch (e) {
+                            "console" in window
+                            && console.log("Unknown \"%s\" validation in \"%s\" input", rule, name);
+                        }
+
+                        if (!valid) { break; }
+                    }
+                }
+                // endregion
 
                 return valid;
             }
@@ -322,10 +332,10 @@ module pl {
          * Gets all values of inputs in JSON format.
          * @returns {object}
          */
-        public getFormValues() {
+        getFormValues() {
             let data = { };
 
-            [].forEach.call(this._inputs, (input) => {
+            [].forEach.call(this.inputs, (input) => {
                 data[input.name] = input.value
             });
 
@@ -333,29 +343,13 @@ module pl {
         }
 
         /**
-         * Get form inputs.
-         * @returns {NodeListOf<Element>}
-         */
-        public getInputs() {
-            let validInputs = [
-                "input[type=text]",
-                "input[type=checkbox]",
-                "input[type=radio]",
-                "select",
-                "textarea"
-            ];
-
-            return this._form.querySelectorAll( validInputs.join(",") );
-        }
-
-        /**
          * Validates all inputs in the form.
          * @returns {boolean}
          */
-        public isFormValid() {
+        isFormValid() {
             let valid = true;
 
-            [].forEach.call(this._inputs, input => {
+            [].forEach.call(this.inputs, input => {
                 this.toggleInputError(input);
 
                 if (!this.isInputValid(input)) {
@@ -369,15 +363,15 @@ module pl {
         /**
          * Reset form inputs.
          */
-        public reset() {
-            this._form.reset();
+        reset() {
+            this.form.reset();
         }
 
         /**
          * Handle submit event.
          * @param {Event} ev
          */
-        public submit(ev) {
+        submit(ev) {
 
             // Validate form.
             if (this.isFormValid()) {
@@ -479,7 +473,7 @@ module pl {
          * Get error event.
          * @returns {pl.Event}
          */
-        public get error() {
+        get error() {
             if (!this._error) {
                 this._error = new Event();
             }
@@ -497,7 +491,7 @@ module pl {
          * Get input error event.
          * @returns {pl.Event}
          */
-        public get inputError() {
+        get inputError() {
             if (!this._inputError) {
                 this._inputError = new Event();
             }
@@ -515,7 +509,7 @@ module pl {
          * Get sending event
          * @returns {pl.Event}
          */
-        public get sending() {
+        get sending() {
             if (!this._sending) {
                 this._sending = new Event();
             }
@@ -533,7 +527,7 @@ module pl {
          * Get success event.
          * @returns {pl.Event}
          */
-        public get success() {
+        get success() {
             if (!this._success) {
                 this._success = new Event();
             }
@@ -545,7 +539,7 @@ module pl {
          * Get disable mode.
          * @returns {boolean}
          */
-        public get disabled() {
+        get disabled() {
             return this._disabled;
         }
 
@@ -553,11 +547,51 @@ module pl {
          * Set disable mode.
          * @param {boolean} disabled
          */
-        public set disabled(disabled) {
+        set disabled(disabled) {
             if (disabled !== this._disabled) {
                 this._disabled = disabled;
                 this.disableForm();
             }
+        }
+
+        /**
+         * Points to form element.
+         * @type {HTMLFormElement}
+         */
+        private _form: HTMLFormElement;
+
+        /**
+         * Get form element.
+         * @returns {HTMLFormElement}
+         */
+        get form(): HTMLFormElement {
+            return this._form;
+        }
+
+        /**
+         * Point to all form inputs.
+         * @type {NodeListOf<Element>}
+         */
+        private _inputs: NodeListOf<Element>;
+
+        /**
+         * Get form inputs.
+         * @returns {NodeListOf<Element>}
+         */
+        get inputs() {
+            if (!this._inputs) {
+                let validInputs = [
+                    "input[type=text]",
+                    "input[type=checkbox]",
+                    "input[type=radio]",
+                    "select",
+                    "textarea"
+                ];
+
+                this._inputs = this._form.querySelectorAll( validInputs.join(",") );
+            }
+
+            return this._inputs;
         }
 
         // endregion

@@ -141,11 +141,11 @@ module pl {
         /**
          * Validate the length of a string in a range.
          * @param {string} value
-         * @param {number} min
-         * @param {number} max
+         * @param {any} min
+         * @param {any} max
          * @returns {boolean}
          */
-        static range (value: string, min: number, max?: number): boolean {
+        static range (value: string, min: any, max?: any): boolean {
             let string: string = Validator.toString(value);
 
             if (string === "undefined"
@@ -157,7 +157,7 @@ module pl {
             min = Validator.toInteger(<string>min);
             max = Validator.toInteger(<string>max);
 
-            if ("number" === typeof max) {
+            if ("number" === typeof max && !isNaN(max)) {
                 return string.length >= min && string.length <= max;
             } else {
                 return string.length >= min;

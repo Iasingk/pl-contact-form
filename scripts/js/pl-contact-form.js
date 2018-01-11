@@ -3,7 +3,7 @@
  */
 var pl;
 (function (pl) {
-    var ContactForm = (function () {
+    var ContactForm = /** @class */ (function () {
         // endregion
         /**
          * Create a contact form instance.
@@ -34,7 +34,6 @@ var pl;
                 useAjax: true
             };
             this._form = form;
-            this._inputs = this.getInputs();
             this._settings = pl.Util.extendsDefaults(defaults, settings);
             this.initializeEvents();
         }
@@ -68,6 +67,7 @@ var pl;
          */
         ContactForm.prototype.changed = function (ev) {
             var code = ev.which || ev.keyCode || 0;
+            console.log('changed...');
             // Do nothing if key is invalid.
             if (this.isInvalidKey(code))
                 return;
@@ -82,10 +82,10 @@ var pl;
         ContactForm.prototype.disableForm = function () {
             var _this = this;
             if (this._disabled)
-                pl.Util.addClass(this._form, 'disabled');
+                pl.Util.addClass(this.form, 'disabled');
             else
-                pl.Util.removeClass(this._form, 'disabled');
-            [].forEach.call(this._inputs, function (input) {
+                pl.Util.removeClass(this.form, 'disabled');
+            [].forEach.call(this.inputs, function (input) {
                 input.disabled = _this._disabled;
             });
         };
@@ -115,13 +115,13 @@ var pl;
             this.submit = this.submit.bind(this);
             this.handleReadyStateChange = this.handleReadyStateChange.bind(this);
             // Attach changed handler to each input in form.
-            [].forEach.call(this._inputs, function (input) {
+            [].forEach.call(this.inputs, function (input) {
                 if (input.type === 'text' || input.tagName.toLowerCase() === 'textarea')
                     input.addEventListener('keyup', _this.changed, false);
                 input.addEventListener('change', _this.changed, false);
             });
             // Attach on submit handler to form.
-            this._form.addEventListener('submit', this.submit, false);
+            this.form.addEventListener('submit', this.submit, false);
             // Attach onbeforeunload handler.
             window.onbeforeunload = this.beforeUnload;
             // Attach handler to state change of request.
@@ -131,18 +131,45 @@ var pl;
          * Check validity of an input.
          * @param {HTMLInputElement} input
          * @returns {boolean} validity
-         * TODO: Try to validate more than 1 validations, maybe if we separate with "|" character.
          */
         ContactForm.prototype.isInputValid = function (input) {
-            var validate = input.dataset['validate'], name = input.name, value = input.value;
-            try {
-                return pl.Validator[validate].call(this, value);
+            if ("string" === typeof input.dataset['validate']) {
+                // Validation rules could be in this form "notEmpty|count:3"
+                var rules = input.dataset['validate'].split('|'), name_1 = input.name, value = input.value, type = input.type, valid = false;
+                // region Validate checkbox input.
+                if (type === "checkbox") {
+                }
+                else if (type === "radio") {
+                }
+                else {
+                    for (var i = 0; i < rules.length; i++) {
+                        var rule = rules[i], args = void 0, array = void 0;
+                        try {
+                            if (rules[i].indexOf(":") > -1) {
+                                rule = rules[i].slice(0, rules[i].indexOf(":"));
+                                args = rules[i].slice(rules[i].indexOf(":") + 1);
+                                array = args.split(',');
+                                array.unshift(value);
+                            }
+                            else {
+                                array = [value];
+                            }
+                            // Validate!!
+                            valid = pl.Validator[rule].apply(this, array);
+                        }
+                        catch (e) {
+                            "console" in window
+                                && console.log("Unknown \"%s\" validation in \"%s\" input", rule, name_1);
+                        }
+                        if (!valid) {
+                            break;
+                        }
+                    }
+                }
+                // endregion
+                return valid;
             }
-            catch (e) {
-                "console" in window
-                    && console.log("Unknown \"%s\" validation in \"%s\" input", validate, name);
-                return false;
-            }
+            return true;
         };
         /**
          * Return if code is an invalid key.
@@ -173,6 +200,9 @@ var pl;
          */
         ContactForm.prototype.toggleInputError = function (input) {
             var type = input['type'];
+            // Points to parent node.
+            var inputParent = input.parentNode;
+            var hasInputContainer = pl.Util.hasClass(inputParent, 'input-container');
             // If input has an error get it.
             var clueElem = input['clue-elem'];
             var clueText = "";
@@ -185,6 +215,8 @@ var pl;
                 }
                 // Remove invalid class.
                 pl.Util.removeClass(input, 'invalid');
+                // Unmark as invalid input parent if has class ".input-container"
+                hasInputContainer && pl.Util.removeClass(inputParent, 'invalid');
             }
             else {
                 if (!clueElem) {
@@ -197,9 +229,13 @@ var pl;
                     // Store clue element in input.
                     input['clue-elem'] = clueElem;
                     pl.Util.insertBefore(clueElem, input);
+                    // Notify that an input has a error.
+                    this.onInputError(input, clueText);
                 }
                 // Set invalid class.
                 pl.Util.addClass(input, 'invalid');
+                // Mark as invalid input parent if has class ".input-container"
+                hasInputContainer && pl.Util.addClass(inputParent, 'invalid');
             }
         };
         // endregion
@@ -210,24 +246,10 @@ var pl;
          */
         ContactForm.prototype.getFormValues = function () {
             var data = {};
-            [].forEach.call(this._inputs, function (input) {
+            [].forEach.call(this.inputs, function (input) {
                 data[input.name] = input.value;
             });
             return data;
-        };
-        /**
-         * Get form inputs.
-         * @returns {NodeListOf<Element>}
-         */
-        ContactForm.prototype.getInputs = function () {
-            var validInputs = [
-                "input[type=text]",
-                "input[type=checkbox]",
-                "input[type=radio]",
-                "select",
-                "textarea"
-            ];
-            return this._form.querySelectorAll(validInputs.join(","));
         };
         /**
          * Validates all inputs in the form.
@@ -236,9 +258,9 @@ var pl;
         ContactForm.prototype.isFormValid = function () {
             var _this = this;
             var valid = true;
-            [].forEach.call(this._inputs, function (input) {
+            [].forEach.call(this.inputs, function (input) {
+                _this.toggleInputError(input);
                 if (!_this.isInputValid(input)) {
-                    _this.toggleInputError(input);
                     valid = false;
                 }
             });
@@ -248,7 +270,7 @@ var pl;
          * Reset form inputs.
          */
         ContactForm.prototype.reset = function () {
-            this._form.reset();
+            this.form.reset();
         };
         /**
          * Handle submit event.
@@ -291,6 +313,16 @@ var pl;
             this._letCloseWindow = true;
         };
         /**
+         * Fires when an input has an error.
+         * @param {HTMLInputElement} input
+         * @param {string} clueText
+         */
+        ContactForm.prototype.onInputError = function (input, clueText) {
+            if (this._inputError) {
+                this._inputError.fire(input, clueText);
+            }
+        };
+        /**
          * Fires when contact form is sending.
          */
         ContactForm.prototype.onSending = function () {
@@ -314,9 +346,63 @@ var pl;
             this._letCloseWindow = true;
             parseInt(response) === 1 && this.reset();
         };
+        Object.defineProperty(ContactForm.prototype, "error", {
+            /**
+             * Get error event.
+             * @returns {pl.Event}
+             */
+            get: function () {
+                if (!this._error) {
+                    this._error = new pl.Event();
+                }
+                return this._error;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(ContactForm.prototype, "inputError", {
+            /**
+             * Get input error event.
+             * @returns {pl.Event}
+             */
+            get: function () {
+                if (!this._inputError) {
+                    this._inputError = new pl.Event();
+                }
+                return this._inputError;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(ContactForm.prototype, "sending", {
+            /**
+             * Get sending event
+             * @returns {pl.Event}
+             */
+            get: function () {
+                if (!this._sending) {
+                    this._sending = new pl.Event();
+                }
+                return this._sending;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(ContactForm.prototype, "success", {
+            /**
+             * Get success event.
+             * @returns {pl.Event}
+             */
+            get: function () {
+                if (!this._success) {
+                    this._success = new pl.Event();
+                }
+                return this._success;
+            },
+            enumerable: true,
+            configurable: true
+        });
         Object.defineProperty(ContactForm.prototype, "disabled", {
-            // endregion
-            // region Properties
             /**
              * Get disable mode.
              * @returns {boolean}
@@ -337,44 +423,34 @@ var pl;
             enumerable: true,
             configurable: true
         });
-        Object.defineProperty(ContactForm.prototype, "error", {
+        Object.defineProperty(ContactForm.prototype, "form", {
             /**
-             * Get error event.
-             * @returns {Event}
+             * Get form element.
+             * @returns {HTMLFormElement}
              */
             get: function () {
-                if (!this._error) {
-                    this._error = new pl.Event();
-                }
-                return this._error;
+                return this._form;
             },
             enumerable: true,
             configurable: true
         });
-        Object.defineProperty(ContactForm.prototype, "sending", {
+        Object.defineProperty(ContactForm.prototype, "inputs", {
             /**
-             * Get sending event
-             * @returns {Event}
+             * Get form inputs.
+             * @returns {NodeListOf<Element>}
              */
             get: function () {
-                if (!this._sending) {
-                    this._sending = new pl.Event();
+                if (!this._inputs) {
+                    var validInputs = [
+                        "input[type=text]",
+                        "input[type=checkbox]",
+                        "input[type=radio]",
+                        "select",
+                        "textarea"
+                    ];
+                    this._inputs = this._form.querySelectorAll(validInputs.join(","));
                 }
-                return this._sending;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        Object.defineProperty(ContactForm.prototype, "success", {
-            /**
-             * Get success event.
-             * @returns {Event}
-             */
-            get: function () {
-                if (!this._success) {
-                    this._success = new pl.Event();
-                }
-                return this._success;
+                return this._inputs;
             },
             enumerable: true,
             configurable: true
@@ -384,7 +460,7 @@ var pl;
     pl.ContactForm = ContactForm;
 })(pl || (pl = {}));
 (function (pl) {
-    var Event = (function () {
+    var Event = /** @class */ (function () {
         /**
          * Create a Event instance.
          * @constructor
@@ -448,7 +524,7 @@ var pl;
  * Created by cesarmejia on 29/08/2017.
  */
 (function (pl) {
-    var Util = (function () {
+    var Util = /** @class */ (function () {
         function Util() {
         }
         /**
@@ -523,9 +599,23 @@ var pl;
  * https://validatejs.org/#validators-datetime
  */
 (function (pl) {
-    var Validator = (function () {
+    var Validator = /** @class */ (function () {
         function Validator() {
         }
+        /**
+         * Validate if value has an specific length.
+         * @param {any} value
+         * @param {any} length
+         */
+        Validator.count = function (value, length) {
+            var string = Validator.toString(value);
+            if (string === "undefined"
+                || string === "null"
+                || string === "NaN"
+                || string === "Infinity")
+                return false;
+            return string.length === length;
+        };
         /**
          * Validate if value is a valid credit card number.
          * @param {string} value
@@ -602,20 +692,6 @@ var pl;
             return /^#\w*/.test(value);
         };
         /**
-         * Validate if value has an specific length.
-         * @param {any} value
-         * @param {number} length
-         */
-        Validator.length = function (value, length) {
-            var string = Validator.toString(value);
-            if (string === "undefined"
-                || string === "null"
-                || string === "NaN"
-                || string === "Infinity")
-                return false;
-            return string.length === length;
-        };
-        /**
          * Validate if value is not empty.
          * @param {string} value
          * @returns {boolean}
@@ -634,6 +710,29 @@ var pl;
             if (!Validator.isString(value))
                 return false;
             return value.replace(/[^\d]/g, '').length === 10;
+        };
+        /**
+         * Validate the length of a string in a range.
+         * @param {string} value
+         * @param {any} min
+         * @param {any} max
+         * @returns {boolean}
+         */
+        Validator.range = function (value, min, max) {
+            var string = Validator.toString(value);
+            if (string === "undefined"
+                || string === "null"
+                || string === "NaN"
+                || string === "Infinity")
+                return false;
+            min = Validator.toInteger(min);
+            max = Validator.toInteger(max);
+            if ("number" === typeof max && !isNaN(max)) {
+                return string.length >= min && string.length <= max;
+            }
+            else {
+                return string.length >= min;
+            }
         };
         /**
          * Validate if value is a valid url.
@@ -676,6 +775,22 @@ var pl;
          */
         Validator.isString = function (value) {
             return "string" === typeof value;
+        };
+        /**
+         * Parse given value to float.
+         * @param {string} value
+         * @returns {number}
+         */
+        Validator.toFloat = function (value) {
+            return parseFloat(value);
+        };
+        /**
+         * Parse given value to integer.
+         * @param {string} value
+         * @returns {number}
+         */
+        Validator.toInteger = function (value) {
+            return parseInt(value);
         };
         /**
          * Parse given value to string.
