@@ -90,8 +90,6 @@ module pl {
         private changed(ev) {
             let code = ev.which || ev.keyCode || 0;
 
-            console.log('changed..');
-
             // Do nothing if key is invalid.
             if (this.isInvalidKey(code)) return;
 
@@ -114,6 +112,22 @@ module pl {
             [].forEach.call(this.inputs, input => {
                 input.disabled = this._disabled;
             });
+        }
+
+        /**
+         * Get input container if have it.
+         * @param {HTMLElement} input
+         * @returns {HTMLElement|null}
+         */
+        private getInputContainer(input: HTMLElement) {
+            let container: HTMLElement = null,
+                parent: HTMLElement = input;
+
+            while (parent = <HTMLElement>parent.parentNode) {
+                if (Util.hasClass(parent, 'input-container')) { break; }
+            }
+
+            return parent;
         }
 
         /**
@@ -181,54 +195,36 @@ module pl {
                 let rules: Array<string> = (<string>input.dataset['validate']).split('|'),
                     name: string = input.name,
                     value: string = input.value,
-                    type: string = input.type,
                     valid: boolean = false;
 
-                // region Validate checkbox input.
-                if (type === "checkbox") {
+                for (let i = 0; i < rules.length; i++) {
+                    let rule: string = rules[i],
+                        args: string,
+                        array: Array<string>;
 
+                    try {
+                        if (rules[i].indexOf(":") > -1) {
+                            rule = rules[i].slice(0, rules[i].indexOf(":"));
+                            args = rules[i].slice(rules[i].indexOf(":") + 1);
 
-                }
-                // endregion
+                            array = args.split(',');
+                            array.unshift(value);
 
-                // region Validate radio input.
-                else if (type === "radio") {
+                        } else {
+                            array = [value];
 
-                }
-                // endregion
-
-                // region Validate select and text input.
-                else {
-                    for (let i = 0; i < rules.length; i++) {
-                        let rule: string = rules[i],
-                            args: string,
-                            array: Array<string>;
-
-                        try {
-                            if (rules[i].indexOf(":") > -1) {
-                                rule = rules[i].slice(0, rules[i].indexOf(":"));
-                                args = rules[i].slice(rules[i].indexOf(":") + 1);
-
-                                array = args.split(',');
-                                array.unshift(value);
-
-                            } else {
-                                array = [value];
-
-                            }
-
-                            // Validate!!
-                            valid = Validator[rule].apply(this, array);
-
-                        } catch (e) {
-                            "console" in window
-                            && console.log("Unknown \"%s\" validation in \"%s\" input", rule, name);
                         }
 
-                        if (!valid) { break; }
+                        // Validate!!
+                        valid = Validator[rule].apply(this, array);
+
+                    } catch (e) {
+                        "console" in window
+                        && console.log("Unknown \"%s\" validation in \"%s\" input", rule, name);
                     }
+
+                    if (!valid) { break; }
                 }
-                // endregion
 
                 return valid;
             }
@@ -270,8 +266,7 @@ module pl {
             let type : String = input['type'];
 
             // Points to parent node.
-            let inputParent: HTMLElement = input.parentNode;
-            let hasInputContainer: boolean = Util.hasClass(inputParent, 'input-container');
+            let inputContainer: HTMLElement = this.getInputContainer(input);
 
             // If input has an error get it.
             let clueElem: HTMLElement = input['clue-elem'];
@@ -291,7 +286,7 @@ module pl {
                 Util.removeClass(input, 'invalid');
 
                 // Unmark as invalid input parent if has class ".input-container"
-                hasInputContainer && Util.removeClass(inputParent, 'invalid');
+                inputContainer && Util.removeClass(inputContainer, 'invalid');
 
             } else {
 
@@ -319,7 +314,7 @@ module pl {
                 Util.addClass(input, 'invalid');
 
                 // Mark as invalid input parent if has class ".input-container"
-                hasInputContainer && Util.addClass(inputParent, 'invalid');
+                inputContainer && Util.addClass(inputContainer, 'invalid');
 
             }
         }
@@ -593,6 +588,26 @@ module pl {
 
             return this._inputs;
         }
+
+        /**
+         * Store checkboxes.
+         * @type {Object}
+         */
+        private _checkboxes: Object;
+
+        /**
+         * Get checkboxes.
+         * @returns {Object}
+         */
+        get checkboxes(): Object {
+            if (!this._checkboxes) {
+
+
+            }
+
+            return this._checkboxes;
+        }
+
 
         // endregion
 
