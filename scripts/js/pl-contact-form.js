@@ -1,7 +1,357 @@
 /**
- * Created by cesarmejia on 20/08/2017.
+ * Created by cesarmejia on 26/09/2017.
  */
 var pl;
+(function (pl) {
+    var Key;
+    (function (Key) {
+        Key[Key["ALT"] = 18] = "ALT";
+        Key[Key["CAPS_LOCK"] = 20] = "CAPS_LOCK";
+        Key[Key["CTRL"] = 17] = "CTRL";
+        Key[Key["DOWN_ARROW"] = 40] = "DOWN_ARROW";
+        Key[Key["LEFT_ARROW"] = 37] = "LEFT_ARROW";
+        Key[Key["RIGHT_ARROW"] = 39] = "RIGHT_ARROW";
+        Key[Key["SELECT"] = 93] = "SELECT";
+        Key[Key["SHIFT"] = 16] = "SHIFT";
+        Key[Key["UP_ARROW"] = 38] = "UP_ARROW";
+        Key[Key["TAB"] = 9] = "TAB";
+    })(Key = pl.Key || (pl.Key = {}));
+})(pl || (pl = {}));
+/**
+ * Created by cesarmejia on 20/08/2017.
+ */
+(function (pl) {
+    var PLEvent = /** @class */ (function () {
+        // endregion
+        /**
+         * Create a PLEvent instance.
+         * @constructor
+         */
+        function PLEvent() {
+            this._handlers = [];
+            this._scope = this || window;
+        }
+        // region Methods
+        /**
+         * Add new handler.
+         * @param {function} handler
+         */
+        PLEvent.prototype.add = function (handler) {
+            if (handler) {
+                this._handlers.push(handler);
+            }
+        };
+        /**
+         * Excecute all suscribed handlers.
+         */
+        PLEvent.prototype.fire = function () {
+            var _this = this;
+            var args = arguments;
+            this._handlers.forEach(function (handler) {
+                handler.apply(_this._scope, args);
+            });
+        };
+        /**
+         * Remove handler from handlers.
+         * @param {function} handler
+         */
+        PLEvent.prototype.remove = function (handler) {
+            this._handlers = this._handlers.filter(function (fn) {
+                if (fn != handler)
+                    return fn;
+            });
+        };
+        return PLEvent;
+    }());
+    pl.PLEvent = PLEvent;
+})(pl || (pl = {}));
+/**
+ * Created by cesarmejia on 29/08/2017.
+ */
+(function (pl) {
+    var Util = /** @class */ (function () {
+        function Util() {
+        }
+        /**
+         * Determine whether any of the matched elements are assigned the given class.
+         * @param {HTMLElement} elem
+         * @param {string} className
+         * @returns {boolean}
+         */
+        Util.hasClass = function (elem, className) {
+            return elem.classList
+                ? elem.classList.contains(className)
+                : new RegExp("\\b" + className + "\\b").test(elem.className);
+        };
+        /**
+         * Adds the specified class to an element.
+         * @param {HTMLElement} elem
+         * @param {string} className
+         */
+        Util.addClass = function (elem, className) {
+            if (elem.classList)
+                elem.classList.add(className);
+            else if (!Util.hasClass(elem, className))
+                elem.className += " " + className;
+        };
+        /**
+         * Remove class from element.
+         * @param {HTMLElement} elem
+         * @param {string} className
+         */
+        Util.removeClass = function (elem, className) {
+            if (elem.classList)
+                elem.classList.remove(className);
+            else
+                elem.className = elem.className.replace(new RegExp("\\b" + className + "\\b", "g"), '');
+        };
+        /**
+         * Insert an HTML structure before a given DOM tree element.
+         * @param {HTMLElement} elem
+         * @param {HTMLElement} refElem
+         */
+        Util.insertBefore = function (elem, refElem) {
+            refElem.parentNode.insertBefore(elem, refElem);
+        };
+        /**
+         * Insert an HTML structure after a given DOM tree element.
+         * @param {HTMLElement} elem
+         * @param {HTMLElement} refElem
+         */
+        Util.insertAfter = function (elem, refElem) {
+            refElem.parentNode.insertBefore(elem, refElem.nextSibling);
+        };
+        /**
+         * Utility method to extend defaults with user settings
+         * @param {object} source
+         * @param {object} settings
+         * @return {object}
+         */
+        Util.extendsDefaults = function (source, settings) {
+            var property;
+            for (property in settings) {
+                if (settings.hasOwnProperty(property))
+                    source[property] = settings[property];
+            }
+            return source;
+        };
+        return Util;
+    }());
+    pl.Util = Util;
+})(pl || (pl = {}));
+/**
+ * Created by cesarmejia on 20/08/2017.
+ * https://validatejs.org/#validators-datetime
+ */
+(function (pl) {
+    var Validator = /** @class */ (function () {
+        function Validator() {
+        }
+        /**
+         * Validate if value has an specific length.
+         * @param {any} value
+         * @param {any} length
+         */
+        Validator.count = function (value, length) {
+            var string = Validator.toString(value);
+            if (string === "undefined"
+                || string === "null"
+                || string === "NaN"
+                || string === "Infinity")
+                return false;
+            return string.length === length;
+        };
+        /**
+         * Validate if value is a valid credit card number.
+         * @param {string} value
+         * @returns {boolean}
+         */
+        Validator.creditCardNumber = function (value) {
+            if (!Validator.isString(value))
+                return false;
+            return /^(\d{4}-?){3}\d{4}$/.test(value);
+        };
+        /**
+         * Validate if value is a valid date "dd/mm/yyyy".
+         * @param {string} value
+         * @returns {boolean}
+         */
+        Validator.date = function (value) {
+            if (!Validator.isString(value))
+                return false;
+            // First check for the pattern
+            if (!/^\d{1,2}\/|-\d{1,2}\/|-\d{4}$/.test(value))
+                return false;
+            // Parse the date parts to integers
+            var parts = value.split(/\/|-/);
+            var day = parseInt(parts[0], 10);
+            var month = parseInt(parts[1], 10);
+            var year = parseInt(parts[2], 10);
+            // Check the ranges of month and year
+            if (year < 1000 || year > 3000 || month == 0 || month > 12)
+                return false;
+            var monthLength = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+            // Adjust for leap years
+            if (year % 400 == 0 || (year % 100 != 0 && year % 4 == 0))
+                monthLength[1] = 29;
+            // Check the range of the day
+            return day > 0 && day <= monthLength[month - 1];
+        };
+        /**
+         * Validate if value is a valid datetime.
+         * @param {string} value
+         * @returns {boolean}
+         */
+        Validator.datetime = function (value) {
+            throw 'Not implemented yet';
+        };
+        /**
+         * Validate if value is a valid email.
+         * @param {string} value
+         * @returns {boolean}
+         */
+        Validator.email = function (value) {
+            if (!Validator.isString(value))
+                return false;
+            return /[\w-\.]{3,}@([\w-]{2,}\.)*([\w-]{2,}\.)[\w-]{2,4}/.test(value);
+        };
+        /**
+         * Validate if two values are equal.
+         * @param {string} value
+         * @param {string} confirm
+         * @returns {boolean}
+         */
+        Validator.equality = function (value, confirm) {
+            if (!Validator.isString(value) && !Validator.isString(confirm))
+                return false;
+            return value === confirm;
+        };
+        /**
+         * Validate if value is a valid hash.
+         * @param {string} value
+         * @returns {boolean}
+         */
+        Validator.hash = function (value) {
+            if (!Validator.isString(value))
+                return false;
+            return /^#\w*/.test(value);
+        };
+        /**
+         * Validate if value is not empty.
+         * @param {string} value
+         * @returns {boolean}
+         */
+        Validator.notEmpty = function (value) {
+            if (!Validator.isString(value))
+                return false;
+            return !!value.length;
+        };
+        /**
+         * Validate if value is a valid phone number.
+         * @param {string} value
+         * @returns {boolean}
+         */
+        Validator.phone = function (value) {
+            if (!Validator.isString(value))
+                return false;
+            return value.replace(/[^\d]/g, '').length === 10;
+        };
+        /**
+         * Validate the length of a string in a range.
+         * @param {string} value
+         * @param {any} min
+         * @param {any} max
+         * @returns {boolean}
+         */
+        Validator.range = function (value, min, max) {
+            var string = Validator.toString(value);
+            if (string === "undefined"
+                || string === "null"
+                || string === "NaN"
+                || string === "Infinity")
+                return false;
+            min = Validator.toInteger(min);
+            max = Validator.toInteger(max);
+            if ("number" === typeof max && !isNaN(max)) {
+                return string.length >= min && string.length <= max;
+            }
+            else {
+                return string.length >= min;
+            }
+        };
+        /**
+         * Validate if value is a valid url.
+         * @param {string} value
+         * @returns {boolean}
+         */
+        Validator.url = function (value) {
+            if (!Validator.isString(value))
+                return false;
+            return /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/.test(value);
+        };
+        /**
+         * Validate if value is an array.
+         * @param {any} value
+         * @returns {boolean}
+         */
+        Validator.isArray = function (value) {
+            return value instanceof Array;
+        };
+        /**
+         * Validate if value is boolean.
+         * @param {any} value
+         * @returns {boolean}
+         */
+        Validator.isBoolean = function (value) {
+            return "boolean" === typeof value;
+        };
+        /**
+         * Validate if value is number.
+         * @param {any} value
+         * @returns {boolean}
+         */
+        Validator.isNumber = function (value) {
+            return "number" === typeof value;
+        };
+        /**
+         * Validate if value is string.
+         * @param value
+         * @returns {boolean}
+         */
+        Validator.isString = function (value) {
+            return "string" === typeof value;
+        };
+        /**
+         * Parse given value to float.
+         * @param {string} value
+         * @returns {number}
+         */
+        Validator.toFloat = function (value) {
+            return parseFloat(value);
+        };
+        /**
+         * Parse given value to integer.
+         * @param {string} value
+         * @returns {number}
+         */
+        Validator.toInteger = function (value) {
+            return parseInt(value);
+        };
+        /**
+         * Parse given value to string.
+         * @param {any} value
+         * @returns {string}
+         */
+        Validator.toString = function (value) {
+            return String(value);
+        };
+        return Validator;
+    }());
+    pl.Validator = Validator;
+})(pl || (pl = {}));
+/**
+ * Created by cesarmejia on 20/08/2017.
+ */
 (function (pl) {
     var ContactForm = /** @class */ (function () {
         // endregion
@@ -639,354 +989,4 @@ var pl;
         return ContactForm;
     }());
     pl.ContactForm = ContactForm;
-})(pl || (pl = {}));
-/**
- * Created by cesarmejia on 26/09/2017.
- */
-(function (pl) {
-    var Key;
-    (function (Key) {
-        Key[Key["ALT"] = 18] = "ALT";
-        Key[Key["CAPS_LOCK"] = 20] = "CAPS_LOCK";
-        Key[Key["CTRL"] = 17] = "CTRL";
-        Key[Key["DOWN_ARROW"] = 40] = "DOWN_ARROW";
-        Key[Key["LEFT_ARROW"] = 37] = "LEFT_ARROW";
-        Key[Key["RIGHT_ARROW"] = 39] = "RIGHT_ARROW";
-        Key[Key["SELECT"] = 93] = "SELECT";
-        Key[Key["SHIFT"] = 16] = "SHIFT";
-        Key[Key["UP_ARROW"] = 38] = "UP_ARROW";
-        Key[Key["TAB"] = 9] = "TAB";
-    })(Key = pl.Key || (pl.Key = {}));
-})(pl || (pl = {}));
-/**
- * Created by cesarmejia on 20/08/2017.
- */
-(function (pl) {
-    var PLEvent = /** @class */ (function () {
-        // endregion
-        /**
-         * Create a PLEvent instance.
-         * @constructor
-         */
-        function PLEvent() {
-            this._handlers = [];
-            this._scope = this || window;
-        }
-        // region Methods
-        /**
-         * Add new handler.
-         * @param {function} handler
-         */
-        PLEvent.prototype.add = function (handler) {
-            if (handler) {
-                this._handlers.push(handler);
-            }
-        };
-        /**
-         * Excecute all suscribed handlers.
-         */
-        PLEvent.prototype.fire = function () {
-            var _this = this;
-            var args = arguments;
-            this._handlers.forEach(function (handler) {
-                handler.apply(_this._scope, args);
-            });
-        };
-        /**
-         * Remove handler from handlers.
-         * @param {function} handler
-         */
-        PLEvent.prototype.remove = function (handler) {
-            this._handlers = this._handlers.filter(function (fn) {
-                if (fn != handler)
-                    return fn;
-            });
-        };
-        return PLEvent;
-    }());
-    pl.PLEvent = PLEvent;
-})(pl || (pl = {}));
-/**
- * Created by cesarmejia on 29/08/2017.
- */
-(function (pl) {
-    var Util = /** @class */ (function () {
-        function Util() {
-        }
-        /**
-         * Determine whether any of the matched elements are assigned the given class.
-         * @param {HTMLElement} elem
-         * @param {string} className
-         * @returns {boolean}
-         */
-        Util.hasClass = function (elem, className) {
-            return elem.classList
-                ? elem.classList.contains(className)
-                : new RegExp("\\b" + className + "\\b").test(elem.className);
-        };
-        /**
-         * Adds the specified class to an element.
-         * @param {HTMLElement} elem
-         * @param {string} className
-         */
-        Util.addClass = function (elem, className) {
-            if (elem.classList)
-                elem.classList.add(className);
-            else if (!Util.hasClass(elem, className))
-                elem.className += " " + className;
-        };
-        /**
-         * Remove class from element.
-         * @param {HTMLElement} elem
-         * @param {string} className
-         */
-        Util.removeClass = function (elem, className) {
-            if (elem.classList)
-                elem.classList.remove(className);
-            else
-                elem.className = elem.className.replace(new RegExp("\\b" + className + "\\b", "g"), '');
-        };
-        /**
-         * Insert an HTML structure before a given DOM tree element.
-         * @param {HTMLElement} elem
-         * @param {HTMLElement} refElem
-         */
-        Util.insertBefore = function (elem, refElem) {
-            refElem.parentNode.insertBefore(elem, refElem);
-        };
-        /**
-         * Insert an HTML structure after a given DOM tree element.
-         * @param {HTMLElement} elem
-         * @param {HTMLElement} refElem
-         */
-        Util.insertAfter = function (elem, refElem) {
-            refElem.parentNode.insertBefore(elem, refElem.nextSibling);
-        };
-        /**
-         * Utility method to extend defaults with user settings
-         * @param {object} source
-         * @param {object} settings
-         * @return {object}
-         */
-        Util.extendsDefaults = function (source, settings) {
-            var property;
-            for (property in settings) {
-                if (settings.hasOwnProperty(property))
-                    source[property] = settings[property];
-            }
-            return source;
-        };
-        return Util;
-    }());
-    pl.Util = Util;
-})(pl || (pl = {}));
-/**
- * Created by cesarmejia on 20/08/2017.
- * https://validatejs.org/#validators-datetime
- */
-(function (pl) {
-    var Validator = /** @class */ (function () {
-        function Validator() {
-        }
-        /**
-         * Validate if value has an specific length.
-         * @param {any} value
-         * @param {any} length
-         */
-        Validator.count = function (value, length) {
-            var string = Validator.toString(value);
-            if (string === "undefined"
-                || string === "null"
-                || string === "NaN"
-                || string === "Infinity")
-                return false;
-            return string.length === length;
-        };
-        /**
-         * Validate if value is a valid credit card number.
-         * @param {string} value
-         * @returns {boolean}
-         */
-        Validator.creditCardNumber = function (value) {
-            if (!Validator.isString(value))
-                return false;
-            return /^(\d{4}-?){3}\d{4}$/.test(value);
-        };
-        /**
-         * Validate if value is a valid date "dd/mm/yyyy".
-         * @param {string} value
-         * @returns {boolean}
-         */
-        Validator.date = function (value) {
-            if (!Validator.isString(value))
-                return false;
-            // First check for the pattern
-            if (!/^\d{1,2}\/|-\d{1,2}\/|-\d{4}$/.test(value))
-                return false;
-            // Parse the date parts to integers
-            var parts = value.split(/\/|-/);
-            var day = parseInt(parts[0], 10);
-            var month = parseInt(parts[1], 10);
-            var year = parseInt(parts[2], 10);
-            // Check the ranges of month and year
-            if (year < 1000 || year > 3000 || month == 0 || month > 12)
-                return false;
-            var monthLength = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-            // Adjust for leap years
-            if (year % 400 == 0 || (year % 100 != 0 && year % 4 == 0))
-                monthLength[1] = 29;
-            // Check the range of the day
-            return day > 0 && day <= monthLength[month - 1];
-        };
-        /**
-         * Validate if value is a valid datetime.
-         * @param {string} value
-         * @returns {boolean}
-         */
-        Validator.datetime = function (value) {
-            throw 'Not implemented yet';
-        };
-        /**
-         * Validate if value is a valid email.
-         * @param {string} value
-         * @returns {boolean}
-         */
-        Validator.email = function (value) {
-            if (!Validator.isString(value))
-                return false;
-            return /[\w-\.]{3,}@([\w-]{2,}\.)*([\w-]{2,}\.)[\w-]{2,4}/.test(value);
-        };
-        /**
-         * Validate if two values are equal.
-         * @param {string} value
-         * @param {string} confirm
-         * @returns {boolean}
-         */
-        Validator.equality = function (value, confirm) {
-            if (!Validator.isString(value) && !Validator.isString(confirm))
-                return false;
-            return value === confirm;
-        };
-        /**
-         * Validate if value is a valid hash.
-         * @param {string} value
-         * @returns {boolean}
-         */
-        Validator.hash = function (value) {
-            if (!Validator.isString(value))
-                return false;
-            return /^#\w*/.test(value);
-        };
-        /**
-         * Validate if value is not empty.
-         * @param {string} value
-         * @returns {boolean}
-         */
-        Validator.notEmpty = function (value) {
-            if (!Validator.isString(value))
-                return false;
-            return !!value.length;
-        };
-        /**
-         * Validate if value is a valid phone number.
-         * @param {string} value
-         * @returns {boolean}
-         */
-        Validator.phone = function (value) {
-            if (!Validator.isString(value))
-                return false;
-            return value.replace(/[^\d]/g, '').length === 10;
-        };
-        /**
-         * Validate the length of a string in a range.
-         * @param {string} value
-         * @param {any} min
-         * @param {any} max
-         * @returns {boolean}
-         */
-        Validator.range = function (value, min, max) {
-            var string = Validator.toString(value);
-            if (string === "undefined"
-                || string === "null"
-                || string === "NaN"
-                || string === "Infinity")
-                return false;
-            min = Validator.toInteger(min);
-            max = Validator.toInteger(max);
-            if ("number" === typeof max && !isNaN(max)) {
-                return string.length >= min && string.length <= max;
-            }
-            else {
-                return string.length >= min;
-            }
-        };
-        /**
-         * Validate if value is a valid url.
-         * @param {string} value
-         * @returns {boolean}
-         */
-        Validator.url = function (value) {
-            if (!Validator.isString(value))
-                return false;
-            return /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/.test(value);
-        };
-        /**
-         * Validate if value is an array.
-         * @param {any} value
-         * @returns {boolean}
-         */
-        Validator.isArray = function (value) {
-            return value instanceof Array;
-        };
-        /**
-         * Validate if value is boolean.
-         * @param {any} value
-         * @returns {boolean}
-         */
-        Validator.isBoolean = function (value) {
-            return "boolean" === typeof value;
-        };
-        /**
-         * Validate if value is number.
-         * @param {any} value
-         * @returns {boolean}
-         */
-        Validator.isNumber = function (value) {
-            return "number" === typeof value;
-        };
-        /**
-         * Validate if value is string.
-         * @param value
-         * @returns {boolean}
-         */
-        Validator.isString = function (value) {
-            return "string" === typeof value;
-        };
-        /**
-         * Parse given value to float.
-         * @param {string} value
-         * @returns {number}
-         */
-        Validator.toFloat = function (value) {
-            return parseFloat(value);
-        };
-        /**
-         * Parse given value to integer.
-         * @param {string} value
-         * @returns {number}
-         */
-        Validator.toInteger = function (value) {
-            return parseInt(value);
-        };
-        /**
-         * Parse given value to string.
-         * @param {any} value
-         * @returns {string}
-         */
-        Validator.toString = function (value) {
-            return String(value);
-        };
-        return Validator;
-    }());
-    pl.Validator = Validator;
 })(pl || (pl = {}));
