@@ -108,7 +108,7 @@ module pl {
          * @returns {boolean}
          */
         static hash (value: string): boolean {
-            if (!Validator.isString(value)) {}
+            if (!Validator.isString(value))
                 return false;
 
             return /^#\w*/.test(value);

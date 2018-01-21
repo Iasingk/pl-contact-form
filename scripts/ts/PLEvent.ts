@@ -1,7 +1,12 @@
+/**
+ * Created by cesarmejia on 20/08/2017.
+ */
 module pl {
 	
-	export class Event {
-		
+	export class PLEvent {
+
+		// region Fields
+
 		/**
 		 * @type {Array<function>}
 		 */
@@ -12,14 +17,18 @@ module pl {
 		 */
 		private _scope: any;
 
+		// endregion
+
 		/**
-		 * Create a Event instance.
+		 * Create a PLEvent instance.
 		 * @constructor
 		 */
 		constructor() {
 			this._handlers = [];
 			this._scope    = this || window;
 		}
+
+		// region Methods
 
 		/**
 		 * Add new handler.
@@ -52,6 +61,8 @@ module pl {
 					return fn;
 			});
 		}
+
+		// endregion
 
 	}
 

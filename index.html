@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:og="http://ogp.me/ns#" itemscope itemtype="http://schema.org/Thing" lang="es-MX">
+<html lang="es">
     <head>
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>PL - Contact Form</title>
+        <title>PL Contact Form</title>
         <meta name="description" content="page-description">
         <meta name="keywords" content="page-keywords">
         <meta name="author" content="César Mejía">
@@ -20,22 +20,22 @@
         <!-- <link rel="apple-touch-icon" sizes="114x114" href="favicons/apple-touch-icon-114x114.png"> -->
 
         <!-- Schema properties -->
-        <meta itemprop="name" content="page-title">
+        <meta itemprop="name" content="PL Contact Form">
         <meta itemprop="description" content="page-description">
         <meta itemprop="url" content="page-url">
         <meta itemprop="image" content="image-url">
 
         <!-- Open Graph properties -->
-        <meta property="fb:app_id" content="app-id">
-        <meta property="og:site_name" content="name">
-        <meta property="og:title" content="page-title">
+        <!-- <meta property="fb:app_id" content="app-id"> -->
+        <meta property="og:site_name" content="PL Contact Form">
+        <meta property="og:title" content="PL Contact Form">
         <meta property="og:description" content="page-description">
         <meta property="og:url" content="page-url">
         <meta property="og:image" content="image-url">
         <meta property="og:type" content="website">
 
         <!-- Twitter integration -->
-        <meta name="twitter:title" content="page-title">
+        <meta name="twitter:title" content="PL Contact Form">
         <meta name="twitter:url" content="page-url">
         <meta name="twitter:image" content="image-url">
         <meta name="twitter:card" content="summary">
@@ -69,22 +69,8 @@
 
                 <div class="wrapper">
                     <div class="input-container">
-                        <div class="something">
-                            <div class="something-else">
-                                <label for="opcion-1">Opción 1</label>
-                                <input id="opcion-1" name="Checkbox" type="checkbox" value="Opción 1"/>
-                            </div>
-                        </div>
-
-                        <label for="opcion-2">Opción 2</label>
-                        <input id="opcion-2" name="Checkbox" type="checkbox" value="Opción 2" />
-
-                        <label for="opcion-3">Opción 3</label>
-                        <input  id="opcion-3" name="Checkbox" type="checkbox" value="Opción 3" />
-                    </div>
-                    <div class="input-container">
                         <label for="contact-form-name">Nombre:</label>
-                        <input data-clue="Introduce un nombre válido." data-validate="notEmpty|range:3,5" id="contact-form-name" name="Name" type="text" autocomplete="off" />
+                        <input data-clue="Introduce un nombre válido." data-validate="range:3" id="contact-form-name" name="Name" type="text" autocomplete="off" />
                     </div>
                     <div class="input-container">
                         <label for="contact-form-email">Email:</label>
@@ -96,8 +82,36 @@
                     </div>
                     <div class="input-container">
                         <label for="contact-form-message">Mensaje</label>
-                        <textarea data-clue="Introduce tu mensaje." data-validate="notEmpty|range:10" id="contact-form-message" name="Message"></textarea>
+                        <textarea data-clue="Introduce tu mensaje." data-validate="notEmpty" id="contact-form-message" name="Message"></textarea>
                     </div>
+
+                    <fieldset class="input-group">
+                        <legend>Intereses: </legend>
+                        <div class="input-container">
+                            <input id="interests-technology" name="Interests" type="checkbox" value="Tecnología"/>
+                            <label for="interests-technology">Tecnología</label>
+                        </div>
+                        <div class="input-container">
+                            <input id="interests-music" name="Interests" type="checkbox" value="Música"/>
+                            <label for="interests-music">Música</label>
+                        </div>
+                        <div class="input-container">
+                            <input id="interests-travel" name="Interests" type="checkbox" value="Viajar"/>
+                            <label for="interests-travel">Viajar</label>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="input-group">
+                        <legend>Eres mayor de edad: </legend>
+                        <div class="input-container">
+                            <input id="mayor-de-edad-si" name="Adult" type="radio" value="Sí"/>
+                            <label for="mayor-de-edad-si">Sí</label>
+                        </div>
+                        <div class="input-container">
+                            <input id="mayor-de-edad-no" name="Adult" type="radio" value="No"/>
+                            <label for="mayor-de-edad-no">No</label>
+                        </div>
+                    </fieldset>
 
                     <input type="submit" value="Enviar">
                 </div>
@@ -141,9 +155,8 @@
                 /**
                  * Handle input error event.
                  * @param {HTMLInputElement} input
-                 * @param {string} clueText
                  */
-                function handleInputError(input, clueText) {
+                function handleInputError(input) {
                     /* Personalize how you want to show input error. */
                 }
 
@@ -191,7 +204,14 @@
                 var wrapper = formElement.querySelector('.wrapper');
                 var form = new pl.ContactForm(formElement, {
                     url    : 'process-ajax.php',
-                    useAjax: true
+                    useAjax: true,
+                    inputSelectors: [
+                        "input[type=text]",
+                        "input[type=checkbox]",
+                        "input[type=radio]",
+                        "select",
+                        "textarea"
+                    ]
                 });
 
                 form.error.add(handleError);

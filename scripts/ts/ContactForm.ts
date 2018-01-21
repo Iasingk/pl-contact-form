@@ -23,7 +23,7 @@ module pl {
          * Object that will be used to make requests.
          * @type {XMLHttpRequest}
          */
-        private _req: XMLHttpRequest = new XMLHttpRequest;
+        private _req: XMLHttpRequest = new XMLHttpRequest();
 
         /**
          * Contains info for contact form.
@@ -35,19 +35,24 @@ module pl {
 
         /**
          * Create a contact form instance.
-         * @param {HTMLElement} form
+         * @param {HTMLElement} element
          * @param {object} settings
          */
-        constructor(form: HTMLFormElement, settings: Object = {}) {
-            if (!(form instanceof HTMLElement))
+        constructor(element: HTMLFormElement, settings: Object = {}) {
+            if (!(element instanceof HTMLElement))
                 throw 'Template is not an HTMLFormElement';
 
             let defaults = {
                 url    : 'process-ajax.php',
-                useAjax: true
+                useAjax: true,
+                inputSelectors: [
+                    "input[type=text]",
+                    "select",
+                    "textarea"
+                ]
             };
 
-            this._form = form;
+            this._element = element;
             this._settings = Util.extendsDefaults(defaults, settings);
 
             this.initializeEvents();
@@ -84,30 +89,13 @@ module pl {
         }
 
         /**
-         * Handle input change event.
-         * @param {Event} ev
-         */
-        private changed(ev) {
-            let code = ev.which || ev.keyCode || 0;
-
-            // Do nothing if key is invalid.
-            if (this.isInvalidKey(code)) return;
-
-            // Retrieve input and some attrs.
-            let input: HTMLInputElement = ev.target;
-
-            // Show or hide error.
-            this.toggleInputError(input);
-        }
-
-        /**
          * Disable or enable form.
          */
         private disableForm() {
             if (this._disabled)
-                Util.addClass(this.form, 'disabled');
+                Util.addClass(this.element, 'disabled');
             else
-                Util.removeClass(this.form, 'disabled');
+                Util.removeClass(this.element, 'disabled');
 
             [].forEach.call(this.inputs, input => {
                 input.disabled = this._disabled;
@@ -117,17 +105,37 @@ module pl {
         /**
          * Get input container if have it.
          * @param {HTMLElement} input
+         * @param {boolean} isText
          * @returns {HTMLElement|null}
          */
-        private getInputContainer(input: HTMLElement) {
+        private getInputContainer(input: HTMLElement, isText: boolean) {
             let container: HTMLElement = null,
                 parent: HTMLElement = input;
 
             while (parent = <HTMLElement>parent.parentNode) {
-                if (Util.hasClass(parent, 'input-container')) { break; }
+                if (parent instanceof HTMLElement) {
+                    if (isText && Util.hasClass(parent, 'input-container')) { break; }
+                    if (!isText && (Util.hasClass(parent, 'input-group') || 'fieldset' === parent.tagName.toLowerCase())) { break; }
+                }
             }
 
             return parent;
+        }
+
+        /**
+         * Handle input change event.
+         * @param {Event} ev
+         */
+        private handleChange(ev) {
+            // Do nothing if key is invalid.
+            if (this.isInvalidKey(ev.which || ev.keyCode || 0)) return;
+
+            // Retrieve input and some attrs.
+            let input: HTMLInputElement = ev.target;
+
+            // Validate input.
+            this.validate(input);
+
         }
 
         /**
@@ -159,22 +167,22 @@ module pl {
          */
         private initializeEvents() {
             this.beforeUnload = this.beforeUnload.bind(this);
-            this.changed      = this.changed.bind(this);
+            this.handleChange = this.handleChange.bind(this);
             this.submit       = this.submit.bind(this);
             this.handleReadyStateChange = this.handleReadyStateChange.bind(this);
 
 
-            // Attach changed handler to each input in form.
+            // Attach handleChange handler to each input in form.
             [].forEach.call(this.inputs, (input) => {
                 if (input.type === 'text' || input.tagName.toLowerCase() === 'textarea')
-                    input.addEventListener('keyup', this.changed, false);
+                    input.addEventListener('keyup', this.handleChange, false);
 
-                input.addEventListener('change', this.changed, false);
+                input.addEventListener('change', this.handleChange, false);
             });
 
 
             // Attach on submit handler to form.
-            this.form.addEventListener('submit', this.submit, false);
+            this.element.addEventListener('submit', this.submit, false);
 
             // Attach onbeforeunload handler.
             window.onbeforeunload = this.beforeUnload;
@@ -182,54 +190,6 @@ module pl {
             // Attach handler to state change of request.
             this._req.onreadystatechange = this.handleReadyStateChange;
 
-        }
-
-        /**
-         * Check validity of an input.
-         * @param {HTMLInputElement} input
-         * @returns {boolean} validity
-         */
-        private isInputValid(input: HTMLInputElement) {
-            if ("string" === typeof input.dataset['validate']) {
-                // Validation rules could be in this form "notEmpty|count:3"
-                let rules: Array<string> = (<string>input.dataset['validate']).split('|'),
-                    name: string = input.name,
-                    value: string = input.value,
-                    valid: boolean = false;
-
-                for (let i = 0; i < rules.length; i++) {
-                    let rule: string = rules[i],
-                        args: string,
-                        array: Array<string>;
-
-                    try {
-                        if (rules[i].indexOf(":") > -1) {
-                            rule = rules[i].slice(0, rules[i].indexOf(":"));
-                            args = rules[i].slice(rules[i].indexOf(":") + 1);
-
-                            array = args.split(',');
-                            array.unshift(value);
-
-                        } else {
-                            array = [value];
-
-                        }
-
-                        // Validate!!
-                        valid = Validator[rule].apply(this, array);
-
-                    } catch (e) {
-                        "console" in window
-                        && console.log("Unknown \"%s\" validation in \"%s\" input", rule, name);
-                    }
-
-                    if (!valid) { break; }
-                }
-
-                return valid;
-            }
-
-            return true;
         }
 
         /**
@@ -259,20 +219,111 @@ module pl {
         }
 
         /**
+         * Validate input checkbox.
+         * @param {HTMLInputElement} input
+         * @returns {boolean}
+         */
+        private isCheckboxValid(input: HTMLInputElement): boolean {
+            let name: string = input.name;
+            let group: Array<HTMLInputElement> = this.checkboxes[name];
+            let valid: boolean = false;
+
+            group.forEach(item => { if (item.checked) { valid = true; } });
+
+            return valid;
+        }
+
+        /**
+         * Validate input radio.
+         * @param {HTMLInputElement} input
+         * @returns {boolean}
+         */
+        private isRadioValid(input: HTMLInputElement): boolean {
+            let name: string = input.name;
+            let group: Array<HTMLInputElement> = this.radios[name];
+            let valid: boolean = false;
+
+            group.forEach(item => { if (item.checked) { valid = true; } });
+
+            return valid;
+        }
+
+        /**
+         * Validate input text value.
+         * @param {HTMLInputElement} input
+         * @returns {boolean}
+         */
+        private isTextValid(input: HTMLInputElement): boolean {
+            if ("string" === typeof input.dataset['validate']) {
+                // Validation rules could be in this form "notEmpty|count:3|range:5,10"
+                let rules: Array<string> = (<string>input.dataset['validate']).split('|'),
+                    name : string  = input.name,
+                    value: string  = input.value,
+                    valid: boolean = false;
+
+                for (let i = 0; i < rules.length; i++) {
+                    let rule: string = rules[i],
+                        args: string,
+                        array: Array<string> = [];
+
+                    // Value that will be valued need to be the first argument
+                    // to Validator methods.
+                    array.push(value);
+
+                    try {
+                        if (rules[i].indexOf(":") > -1) {
+                            rule = rules[i].slice(0, rules[i].indexOf(":"));
+                            args = rules[i].slice(rules[i].indexOf(":") + 1);
+
+                            // When the rule is equality we must find the element with which
+                            // we're going to do the comparison.
+                            if (rule === "equality") {
+                                let filter = this.texts.filter((e: HTMLInputElement) => e.name === args);
+                                array.push(filter[0].value);
+
+                            } else {
+                                array = array.concat(args.split(','));
+
+                            }
+                        }
+
+                        // Validate!!
+                        valid = Validator[rule].apply(this, array);
+
+                    } catch (e) {
+                        "console" in window
+                        && console.log("Unknown \"%s\" validation in \"%s\" input", rule, name);
+                    }
+
+                    // All rules must be true, if one fails break the loop.
+                    if (!valid) { break; }
+                }
+
+                return valid;
+            }
+
+            return true;
+        }
+
+        /**
          * Add or remove error from input
          * @param {HTMLElement} input
+         * @param {boolean} isValid
          */
-        private toggleInputError(input) {
+        private toggleInputError(input, isValid) {
             let type : String = input['type'];
-
-            // Points to parent node.
-            let inputContainer: HTMLElement = this.getInputContainer(input);
 
             // If input has an error get it.
             let clueElem: HTMLElement = input['clue-elem'];
             let clueText: string = "";
 
-            if (this.isInputValid(input)) {
+            // Points to parent node.
+            let isText: boolean = ("checkbox" !== type && "radio" !== type);
+            let inputContainer: HTMLElement = this.getInputContainer(input, isText);
+
+
+            // Toggle error of the input.
+            if (isValid) {
 
                 if (clueElem) {
                     // Disappears and remove error element from DOM.
@@ -292,7 +343,7 @@ module pl {
 
                 if (!clueElem) {
                     // Retrieve input clue.
-                    clueText = input.dataset['clue'] || 'Inválido';
+                    clueText = input.dataset['clue'] || 'Invalid';
 
                     // Create clue element.
                     clueElem = document.createElement('span');
@@ -305,9 +356,6 @@ module pl {
 
                     Util.insertBefore(clueElem, input);
 
-                    // Notify that an input has a error.
-                    this.onInputError(input, clueText);
-
                 }
 
                 // Set invalid class.
@@ -319,6 +367,39 @@ module pl {
             }
         }
 
+        /**
+         * Validate input.
+         * @param {HTMLInputElement} input
+         * @returns {boolean}
+         */
+        private validate(input: HTMLInputElement): boolean {
+            let type: string = input.type;
+            let name: string = input.name;
+            let valid: boolean;
+
+            // Get validity of "checkbox" and toggle his error.
+            if ("checkbox" === type) {
+                valid = this.isCheckboxValid(input);
+                this.checkboxes[name].forEach(checkbox => { this.toggleInputError(checkbox, valid); });
+            }
+
+            // Get validity of "radio" and toggle his error.
+            else if ("radio" === type) {
+                valid = this.isRadioValid(input);
+                this.radios[name].forEach(radio => { this.toggleInputError(radio, valid); });
+            }
+
+            // Get validity of "text" and toggle his error.
+            else {
+                valid = this.isTextValid(input);
+                this.toggleInputError(input, valid);
+            }
+
+            if (!valid) { this.onInputError(input); }
+
+            return valid;
+        }
+
         // endregion
 
         // region Methods
@@ -328,10 +409,29 @@ module pl {
          * @returns {object}
          */
         getFormValues() {
-            let data = { };
+            let data: Object = { },
+                name: string,
+                type: string;
 
-            [].forEach.call(this.inputs, (input) => {
-                data[input.name] = input.value
+            [].forEach.call(this.inputs, (input: HTMLInputElement) => {
+                name = input.name;
+                type = input.type;
+
+                // Checkboxes
+                if ("checkbox" === type && input.checked) {
+                    if ("string" === typeof data[name]) { data[name] += `, ${ input.value }`; }
+                    else { data[name] = input.value; }
+                }
+
+                // Radios
+                if ("radio" === type && input.checked) {
+                    data[name] = input.value;
+                }
+
+                // Texts
+                if ("text" === type || "hidden" === type || "textarea" === input.tagName.toLowerCase()) {
+                    data[name] = input.value;
+                }
             });
 
             return data;
@@ -342,15 +442,25 @@ module pl {
          * @returns {boolean}
          */
         isFormValid() {
-            let valid = true;
+            let valid: boolean = true;
+            let prop: string, input: HTMLInputElement;
 
-            [].forEach.call(this.inputs, input => {
-                this.toggleInputError(input);
+            // Check validity of checkboxes.
+            for (prop in this.checkboxes) {
+                // Check first element of a group.
+                input = this.checkboxes[prop][0];
+                if (!this.validate(input)) { valid = false; }
+            }
 
-                if (!this.isInputValid(input)) {
-                    valid = false;
-                }
-            });
+            // Check validity of radios.
+            for (prop in this.radios) {
+                // Check first element of a group.
+                input = this.radios[prop][0];
+                if (!this.validate(input)) { valid = false; }
+            }
+
+            // Check validity of texts and textarea.
+            this.texts.forEach(input => { if (!this.validate(input)) { valid = false; } });
 
             return valid;
         }
@@ -359,7 +469,7 @@ module pl {
          * Reset form inputs.
          */
         reset() {
-            this.form.reset();
+            this.element.reset();
         }
 
         /**
@@ -417,11 +527,10 @@ module pl {
         /**
          * Fires when an input has an error.
          * @param {HTMLInputElement} input
-         * @param {string} clueText
          */
-        private onInputError(input, clueText) {
+        private onInputError(input) {
             if (this._inputError) {
-                this._inputError.fire(input, clueText);
+                this._inputError.fire(input);
             }
         }
 
@@ -451,7 +560,11 @@ module pl {
             this.disabled = false;
             this._letCloseWindow = true;
 
-            parseInt(response) === 1 && this.reset();
+            // Specific line to Goplek.
+            let data = parseInt(response);
+            if (!isNaN(data) && data === 1) {
+                this.reset()
+            }
         }
 
         // endregion
@@ -460,17 +573,17 @@ module pl {
 
         /**
          * Error event.
-         * @type {pl.Event}
+         * @type {pl.PLEvent}
          */
-        private _error: Event;
+        private _error: PLEvent;
 
         /**
          * Get error event.
-         * @returns {pl.Event}
+         * @returns {pl.PLEvent}
          */
         get error() {
             if (!this._error) {
-                this._error = new Event();
+                this._error = new PLEvent();
             }
 
             return this._error;
@@ -478,17 +591,17 @@ module pl {
 
         /**
          * Input error event.
-         * @type {pl.Event}
+         * @type {pl.PLEvent}
          */
-        private _inputError: Event;
+        private _inputError: PLEvent;
 
         /**
          * Get input error event.
-         * @returns {pl.Event}
+         * @returns {pl.PLEvent}
          */
         get inputError() {
             if (!this._inputError) {
-                this._inputError = new Event();
+                this._inputError = new PLEvent();
             }
 
             return this._inputError;
@@ -496,17 +609,17 @@ module pl {
 
         /**
          * Sending event.
-         * @type {pl.Event}
+         * @type {pl.PLEvent}
          */
-        private _sending: Event;
+        private _sending: PLEvent;
 
         /**
          * Get sending event
-         * @returns {pl.Event}
+         * @returns {pl.PLEvent}
          */
         get sending() {
             if (!this._sending) {
-                this._sending = new Event();
+                this._sending = new PLEvent();
             }
 
             return this._sending;
@@ -514,17 +627,17 @@ module pl {
 
         /**
          * Success event.
-         * @type {pl.Event}
+         * @type {pl.PLEvent}
          */
-        private _success: Event;
+        private _success: PLEvent;
 
         /**
          * Get success event.
-         * @returns {pl.Event}
+         * @returns {pl.PLEvent}
          */
         get success() {
             if (!this._success) {
-                this._success = new Event();
+                this._success = new PLEvent();
             }
 
             return this._success;
@@ -553,14 +666,14 @@ module pl {
          * Points to form element.
          * @type {HTMLFormElement}
          */
-        private _form: HTMLFormElement;
+        private _element: HTMLFormElement;
 
         /**
          * Get form element.
          * @returns {HTMLFormElement}
          */
-        get form(): HTMLFormElement {
-            return this._form;
+        get element(): HTMLFormElement {
+            return this._element;
         }
 
         /**
@@ -575,22 +688,15 @@ module pl {
          */
         get inputs() {
             if (!this._inputs) {
-                let validInputs = [
-                    "input[type=text]",
-                    "input[type=checkbox]",
-                    "input[type=radio]",
-                    "select",
-                    "textarea"
-                ];
-
-                this._inputs = this._form.querySelectorAll( validInputs.join(",") );
+                let selectors = this._settings['inputSelectors'];
+                this._inputs = this._element.querySelectorAll( selectors.join(",") );
             }
 
             return this._inputs;
         }
 
         /**
-         * Store checkboxes.
+         * Store checkboxes grouped by name attribute.
          * @type {Object}
          */
         private _checkboxes: Object;
@@ -601,13 +707,74 @@ module pl {
          */
         get checkboxes(): Object {
             if (!this._checkboxes) {
+                this._checkboxes = { };
 
+                [].forEach.call(this.inputs, (input: HTMLInputElement) => {
+                    if ("checkbox" === input.type) {
+                        if (!this._checkboxes.hasOwnProperty(input.name)) {
+                            this._checkboxes[input.name] = [];
+                        }
 
+                        this._checkboxes[input.name].push(input);
+                    }
+                });
             }
 
             return this._checkboxes;
         }
 
+        /**
+         * Store radios gropued by name attribute.
+         * @type {Object}
+         */
+        private _radios: Object;
+
+        /**
+         * Get radios.
+         * @returns {Object}
+         */
+        get radios(): Object {
+            if (!this._radios) {
+                this._radios = { };
+
+                [].forEach.call(this.inputs, (input: HTMLInputElement) => {
+                    if ("radio" === input.type) {
+                        if (!this._radios.hasOwnProperty(input.name)) {
+                            this._radios[input.name] = [];
+                        }
+
+                        this._radios[input.name].push(input);
+                    }
+                });
+            }
+
+            return this._radios;
+        }
+
+        /**
+         * Store texts.
+         * @type {Array<HTMLInputElement>}
+         */
+        private _texts: Array<HTMLInputElement>;
+
+        /**
+         * Get texts.
+         * @returns {Object}
+         */
+        get texts(): Array<HTMLInputElement> {
+            if (!this._texts) {
+                this._texts = [];
+
+                [].forEach.call(this.inputs, (input: HTMLInputElement) => {
+                    if ("text" === input.type || "hidden" === input.type || "textarea" === input.tagName.toLowerCase()) {
+                        this._texts.push(input);
+                    }
+                });
+
+            }
+
+            return this._texts;
+        }
 
         // endregion
 

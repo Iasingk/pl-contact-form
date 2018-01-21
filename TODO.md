@@ -7,5 +7,6 @@
 - [ ] Validate inputs that are added dynamically
 - [x] Add error to input-container if exist
 - [x] Add event on input error
-- [ ] Validate input radio and check
-- [ ] Validate equal
+- [x] Validate input radio and check
+- [x] Validate equal
+- [ ] Add error to checkbox or radio group (line: 314)
