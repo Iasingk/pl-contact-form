@@ -7,10 +7,10 @@ var pl;
         // endregion
         /**
          * Create a contact form instance.
-         * @param {HTMLElement} form
+         * @param {HTMLElement} element
          * @param {object} settings
          */
-        function ContactForm(form, settings) {
+        function ContactForm(element, settings) {
             if (settings === void 0) { settings = {}; }
             /**
              * Determine if window could close or not.
@@ -21,19 +21,24 @@ var pl;
              * Object that will be used to make requests.
              * @type {XMLHttpRequest}
              */
-            this._req = new XMLHttpRequest;
+            this._req = new XMLHttpRequest();
             /**
              * Contains info for contact form.
              * @type {object}
              */
             this._settings = {};
-            if (!(form instanceof HTMLElement))
+            if (!(element instanceof HTMLElement))
                 throw 'Template is not an HTMLFormElement';
             var defaults = {
                 url: 'process-ajax.php',
-                useAjax: true
+                useAjax: true,
+                inputSelectors: [
+                    "input[type=text]",
+                    "select",
+                    "textarea"
+                ]
             };
-            this._form = form;
+            this._element = element;
             this._settings = pl.Util.extendsDefaults(defaults, settings);
             this.initializeEvents();
         }
@@ -62,32 +67,50 @@ var pl;
             }
         };
         /**
-         * Handle input change event.
-         * @param {Event} ev
-         */
-        ContactForm.prototype.changed = function (ev) {
-            var code = ev.which || ev.keyCode || 0;
-            console.log('changed...');
-            // Do nothing if key is invalid.
-            if (this.isInvalidKey(code))
-                return;
-            // Retrieve input and some attrs.
-            var input = ev.target;
-            // Show or hide error.
-            this.toggleInputError(input);
-        };
-        /**
          * Disable or enable form.
          */
         ContactForm.prototype.disableForm = function () {
             var _this = this;
             if (this._disabled)
-                pl.Util.addClass(this.form, 'disabled');
+                pl.Util.addClass(this.element, 'disabled');
             else
-                pl.Util.removeClass(this.form, 'disabled');
+                pl.Util.removeClass(this.element, 'disabled');
             [].forEach.call(this.inputs, function (input) {
                 input.disabled = _this._disabled;
             });
+        };
+        /**
+         * Get input container if have it.
+         * @param {HTMLElement} input
+         * @param {boolean} isText
+         * @returns {HTMLElement|null}
+         */
+        ContactForm.prototype.getInputContainer = function (input, isText) {
+            var container = null, parent = input;
+            while (parent = parent.parentNode) {
+                if (parent instanceof HTMLElement) {
+                    if (isText && pl.Util.hasClass(parent, 'input-container')) {
+                        break;
+                    }
+                    if (!isText && (pl.Util.hasClass(parent, 'input-group') || 'fieldset' === parent.tagName.toLowerCase())) {
+                        break;
+                    }
+                }
+            }
+            return parent;
+        };
+        /**
+         * Handle input change event.
+         * @param {Event} ev
+         */
+        ContactForm.prototype.handleChange = function (ev) {
+            // Do nothing if key is invalid.
+            if (this.isInvalidKey(ev.which || ev.keyCode || 0))
+                return;
+            // Retrieve input and some attrs.
+            var input = ev.target;
+            // Validate input.
+            this.validate(input);
         };
         /**
          * Handles state changes of request.
@@ -111,65 +134,21 @@ var pl;
         ContactForm.prototype.initializeEvents = function () {
             var _this = this;
             this.beforeUnload = this.beforeUnload.bind(this);
-            this.changed = this.changed.bind(this);
+            this.handleChange = this.handleChange.bind(this);
             this.submit = this.submit.bind(this);
             this.handleReadyStateChange = this.handleReadyStateChange.bind(this);
-            // Attach changed handler to each input in form.
+            // Attach handleChange handler to each input in form.
             [].forEach.call(this.inputs, function (input) {
                 if (input.type === 'text' || input.tagName.toLowerCase() === 'textarea')
-                    input.addEventListener('keyup', _this.changed, false);
-                input.addEventListener('change', _this.changed, false);
+                    input.addEventListener('keyup', _this.handleChange, false);
+                input.addEventListener('change', _this.handleChange, false);
             });
             // Attach on submit handler to form.
-            this.form.addEventListener('submit', this.submit, false);
+            this.element.addEventListener('submit', this.submit, false);
             // Attach onbeforeunload handler.
             window.onbeforeunload = this.beforeUnload;
             // Attach handler to state change of request.
             this._req.onreadystatechange = this.handleReadyStateChange;
-        };
-        /**
-         * Check validity of an input.
-         * @param {HTMLInputElement} input
-         * @returns {boolean} validity
-         */
-        ContactForm.prototype.isInputValid = function (input) {
-            if ("string" === typeof input.dataset['validate']) {
-                // Validation rules could be in this form "notEmpty|count:3"
-                var rules = input.dataset['validate'].split('|'), name_1 = input.name, value = input.value, type = input.type, valid = false;
-                // region Validate checkbox input.
-                if (type === "checkbox") {
-                }
-                else if (type === "radio") {
-                }
-                else {
-                    for (var i = 0; i < rules.length; i++) {
-                        var rule = rules[i], args = void 0, array = void 0;
-                        try {
-                            if (rules[i].indexOf(":") > -1) {
-                                rule = rules[i].slice(0, rules[i].indexOf(":"));
-                                args = rules[i].slice(rules[i].indexOf(":") + 1);
-                                array = args.split(',');
-                                array.unshift(value);
-                            }
-                            else {
-                                array = [value];
-                            }
-                            // Validate!!
-                            valid = pl.Validator[rule].apply(this, array);
-                        }
-                        catch (e) {
-                            "console" in window
-                                && console.log("Unknown \"%s\" validation in \"%s\" input", rule, name_1);
-                        }
-                        if (!valid) {
-                            break;
-                        }
-                    }
-                }
-                // endregion
-                return valid;
-            }
-            return true;
         };
         /**
          * Return if code is an invalid key.
@@ -195,18 +174,98 @@ var pl;
             return false;
         };
         /**
+         * Validate input checkbox.
+         * @param {HTMLInputElement} input
+         * @returns {boolean}
+         */
+        ContactForm.prototype.isCheckboxValid = function (input) {
+            var name = input.name;
+            var group = this.checkboxes[name];
+            var valid = false;
+            group.forEach(function (item) { if (item.checked) {
+                valid = true;
+            } });
+            return valid;
+        };
+        /**
+         * Validate input radio.
+         * @param {HTMLInputElement} input
+         * @returns {boolean}
+         */
+        ContactForm.prototype.isRadioValid = function (input) {
+            var name = input.name;
+            var group = this.radios[name];
+            var valid = false;
+            group.forEach(function (item) { if (item.checked) {
+                valid = true;
+            } });
+            return valid;
+        };
+        /**
+         * Validate input text value.
+         * @param {HTMLInputElement} input
+         * @returns {boolean}
+         */
+        ContactForm.prototype.isTextValid = function (input) {
+            if ("string" === typeof input.dataset['validate']) {
+                // Validation rules could be in this form "notEmpty|count:3|range:5,10"
+                var rules = input.dataset['validate'].split('|'), name_1 = input.name, value = input.value, valid = false;
+                var _loop_1 = function (i) {
+                    var rule = rules[i], args, array = [];
+                    // Value that will be valued need to be the first argument
+                    // to Validator methods.
+                    array.push(value);
+                    try {
+                        if (rules[i].indexOf(":") > -1) {
+                            rule = rules[i].slice(0, rules[i].indexOf(":"));
+                            args = rules[i].slice(rules[i].indexOf(":") + 1);
+                            // When the rule is equality we must find the element with which
+                            // we're going to do the comparison.
+                            if (rule === "equality") {
+                                var filter = this_1.texts.filter(function (e) { return e.name === args; });
+                                array.push(filter[0].value);
+                            }
+                            else {
+                                array = array.concat(args.split(','));
+                            }
+                        }
+                        // Validate!!
+                        valid = pl.Validator[rule].apply(this_1, array);
+                    }
+                    catch (e) {
+                        "console" in window
+                            && console.log("Unknown \"%s\" validation in \"%s\" input", rule, name_1);
+                    }
+                    // All rules must be true, if one fails break the loop.
+                    if (!valid) {
+                        return "break";
+                    }
+                };
+                var this_1 = this;
+                for (var i = 0; i < rules.length; i++) {
+                    var state_1 = _loop_1(i);
+                    if (state_1 === "break")
+                        break;
+                }
+                return valid;
+            }
+            return true;
+        };
+        /**
          * Add or remove error from input
          * @param {HTMLElement} input
+         * @param {boolean} isValid
          */
-        ContactForm.prototype.toggleInputError = function (input) {
+        ContactForm.prototype.toggleInputError = function (input, isValid) {
             var type = input['type'];
-            // Points to parent node.
-            var inputParent = input.parentNode;
-            var hasInputContainer = pl.Util.hasClass(inputParent, 'input-container');
             // If input has an error get it.
             var clueElem = input['clue-elem'];
             var clueText = "";
-            if (this.isInputValid(input)) {
+            // Points to parent node.
+            var isText = ("checkbox" !== type && "radio" !== type);
+            var inputContainer = this.getInputContainer(input, isText);
+            // Toggle error of the input.
+            if (isValid) {
                 if (clueElem) {
                     // Disappears and remove error element from DOM.
                     clueElem.parentNode.removeChild(clueElem);
@@ -216,12 +275,12 @@ var pl;
                 // Remove invalid class.
                 pl.Util.removeClass(input, 'invalid');
                 // Unmark as invalid input parent if has class ".input-container"
-                hasInputContainer && pl.Util.removeClass(inputParent, 'invalid');
+                inputContainer && pl.Util.removeClass(inputContainer, 'invalid');
             }
             else {
                 if (!clueElem) {
                     // Retrieve input clue.
-                    clueText = input.dataset['clue'] || 'Inválido';
+                    clueText = input.dataset['clue'] || 'Invalid';
                     // Create clue element.
                     clueElem = document.createElement('span');
                     clueElem.innerText = clueText;
@@ -229,14 +288,40 @@ var pl;
                     // Store clue element in input.
                     input['clue-elem'] = clueElem;
                     pl.Util.insertBefore(clueElem, input);
-                    // Notify that an input has a error.
-                    this.onInputError(input, clueText);
                 }
                 // Set invalid class.
                 pl.Util.addClass(input, 'invalid');
                 // Mark as invalid input parent if has class ".input-container"
-                hasInputContainer && pl.Util.addClass(inputParent, 'invalid');
+                inputContainer && pl.Util.addClass(inputContainer, 'invalid');
             }
+        };
+        /**
+         * Validate input.
+         * @param {HTMLInputElement} input
+         * @returns {boolean}
+         */
+        ContactForm.prototype.validate = function (input) {
+            var _this = this;
+            var type = input.type;
+            var name = input.name;
+            var valid;
+            // Get validity of "checkbox" and toggle his error.
+            if ("checkbox" === type) {
+                valid = this.isCheckboxValid(input);
+                this.checkboxes[name].forEach(function (checkbox) { _this.toggleInputError(checkbox, valid); });
+            }
+            else if ("radio" === type) {
+                valid = this.isRadioValid(input);
+                this.radios[name].forEach(function (radio) { _this.toggleInputError(radio, valid); });
+            }
+            else {
+                valid = this.isTextValid(input);
+                this.toggleInputError(input, valid);
+            }
+            if (!valid) {
+                this.onInputError(input);
+            }
+            return valid;
         };
         // endregion
         // region Methods
@@ -245,9 +330,27 @@ var pl;
          * @returns {object}
          */
         ContactForm.prototype.getFormValues = function () {
-            var data = {};
+            var data = {}, name, type;
             [].forEach.call(this.inputs, function (input) {
-                data[input.name] = input.value;
+                name = input.name;
+                type = input.type;
+                // Checkboxes
+                if ("checkbox" === type && input.checked) {
+                    if ("string" === typeof data[name]) {
+                        data[name] += ", " + input.value;
+                    }
+                    else {
+                        data[name] = input.value;
+                    }
+                }
+                // Radios
+                if ("radio" === type && input.checked) {
+                    data[name] = input.value;
+                }
+                // Texts
+                if ("text" === type || "hidden" === type || "textarea" === input.tagName.toLowerCase()) {
+                    data[name] = input.value;
+                }
             });
             return data;
         };
@@ -258,19 +361,34 @@ var pl;
         ContactForm.prototype.isFormValid = function () {
             var _this = this;
             var valid = true;
-            [].forEach.call(this.inputs, function (input) {
-                _this.toggleInputError(input);
-                if (!_this.isInputValid(input)) {
+            var prop, input;
+            // Check validity of checkboxes.
+            for (prop in this.checkboxes) {
+                // Check first element of a group.
+                input = this.checkboxes[prop][0];
+                if (!this.validate(input)) {
                     valid = false;
                 }
-            });
+            }
+            // Check validity of radios.
+            for (prop in this.radios) {
+                // Check first element of a group.
+                input = this.radios[prop][0];
+                if (!this.validate(input)) {
+                    valid = false;
+                }
+            }
+            // Check validity of texts and textarea.
+            this.texts.forEach(function (input) { if (!_this.validate(input)) {
+                valid = false;
+            } });
             return valid;
         };
         /**
          * Reset form inputs.
          */
         ContactForm.prototype.reset = function () {
-            this.form.reset();
+            this.element.reset();
         };
         /**
          * Handle submit event.
@@ -315,11 +433,10 @@ var pl;
         /**
          * Fires when an input has an error.
          * @param {HTMLInputElement} input
-         * @param {string} clueText
          */
-        ContactForm.prototype.onInputError = function (input, clueText) {
+        ContactForm.prototype.onInputError = function (input) {
             if (this._inputError) {
-                this._inputError.fire(input, clueText);
+                this._inputError.fire(input);
             }
         };
         /**
@@ -344,16 +461,20 @@ var pl;
             }
             this.disabled = false;
             this._letCloseWindow = true;
-            parseInt(response) === 1 && this.reset();
+            // Specific line to Goplek.
+            var data = parseInt(response);
+            if (!isNaN(data) && data === 1) {
+                this.reset();
+            }
         };
         Object.defineProperty(ContactForm.prototype, "error", {
             /**
              * Get error event.
-             * @returns {pl.Event}
+             * @returns {pl.PLEvent}
              */
             get: function () {
                 if (!this._error) {
-                    this._error = new pl.Event();
+                    this._error = new pl.PLEvent();
                 }
                 return this._error;
             },
@@ -363,11 +484,11 @@ var pl;
         Object.defineProperty(ContactForm.prototype, "inputError", {
             /**
              * Get input error event.
-             * @returns {pl.Event}
+             * @returns {pl.PLEvent}
              */
             get: function () {
                 if (!this._inputError) {
-                    this._inputError = new pl.Event();
+                    this._inputError = new pl.PLEvent();
                 }
                 return this._inputError;
             },
@@ -377,11 +498,11 @@ var pl;
         Object.defineProperty(ContactForm.prototype, "sending", {
             /**
              * Get sending event
-             * @returns {pl.Event}
+             * @returns {pl.PLEvent}
              */
             get: function () {
                 if (!this._sending) {
-                    this._sending = new pl.Event();
+                    this._sending = new pl.PLEvent();
                 }
                 return this._sending;
             },
@@ -391,11 +512,11 @@ var pl;
         Object.defineProperty(ContactForm.prototype, "success", {
             /**
              * Get success event.
-             * @returns {pl.Event}
+             * @returns {pl.PLEvent}
              */
             get: function () {
                 if (!this._success) {
-                    this._success = new pl.Event();
+                    this._success = new pl.PLEvent();
                 }
                 return this._success;
             },
@@ -423,13 +544,13 @@ var pl;
             enumerable: true,
             configurable: true
         });
-        Object.defineProperty(ContactForm.prototype, "form", {
+        Object.defineProperty(ContactForm.prototype, "element", {
             /**
              * Get form element.
              * @returns {HTMLFormElement}
              */
             get: function () {
-                return this._form;
+                return this._element;
             },
             enumerable: true,
             configurable: true
@@ -441,16 +562,76 @@ var pl;
              */
             get: function () {
                 if (!this._inputs) {
-                    var validInputs = [
-                        "input[type=text]",
-                        "input[type=checkbox]",
-                        "input[type=radio]",
-                        "select",
-                        "textarea"
-                    ];
-                    this._inputs = this._form.querySelectorAll(validInputs.join(","));
+                    var selectors = this._settings['inputSelectors'];
+                    this._inputs = this._element.querySelectorAll(selectors.join(","));
                 }
                 return this._inputs;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(ContactForm.prototype, "checkboxes", {
+            /**
+             * Get checkboxes.
+             * @returns {Object}
+             */
+            get: function () {
+                var _this = this;
+                if (!this._checkboxes) {
+                    this._checkboxes = {};
+                    [].forEach.call(this.inputs, function (input) {
+                        if ("checkbox" === input.type) {
+                            if (!_this._checkboxes.hasOwnProperty(input.name)) {
+                                _this._checkboxes[input.name] = [];
+                            }
+                            _this._checkboxes[input.name].push(input);
+                        }
+                    });
+                }
+                return this._checkboxes;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(ContactForm.prototype, "radios", {
+            /**
+             * Get radios.
+             * @returns {Object}
+             */
+            get: function () {
+                var _this = this;
+                if (!this._radios) {
+                    this._radios = {};
+                    [].forEach.call(this.inputs, function (input) {
+                        if ("radio" === input.type) {
+                            if (!_this._radios.hasOwnProperty(input.name)) {
+                                _this._radios[input.name] = [];
+                            }
+                            _this._radios[input.name].push(input);
+                        }
+                    });
+                }
+                return this._radios;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(ContactForm.prototype, "texts", {
+            /**
+             * Get texts.
+             * @returns {Object}
+             */
+            get: function () {
+                var _this = this;
+                if (!this._texts) {
+                    this._texts = [];
+                    [].forEach.call(this.inputs, function (input) {
+                        if ("text" === input.type || "hidden" === input.type || "textarea" === input.tagName.toLowerCase()) {
+                            _this._texts.push(input);
+                        }
+                    });
+                }
+                return this._texts;
             },
             enumerable: true,
             configurable: true
@@ -458,49 +639,6 @@ var pl;
         return ContactForm;
     }());
     pl.ContactForm = ContactForm;
-})(pl || (pl = {}));
-(function (pl) {
-    var Event = /** @class */ (function () {
-        /**
-         * Create a Event instance.
-         * @constructor
-         */
-        function Event() {
-            this._handlers = [];
-            this._scope = this || window;
-        }
-        /**
-         * Add new handler.
-         * @param {function} handler
-         */
-        Event.prototype.add = function (handler) {
-            if (handler) {
-                this._handlers.push(handler);
-            }
-        };
-        /**
-         * Excecute all suscribed handlers.
-         */
-        Event.prototype.fire = function () {
-            var _this = this;
-            var args = arguments;
-            this._handlers.forEach(function (handler) {
-                handler.apply(_this._scope, args);
-            });
-        };
-        /**
-         * Remove handler from handlers.
-         * @param {function} handler
-         */
-        Event.prototype.remove = function (handler) {
-            this._handlers = this._handlers.filter(function (fn) {
-                if (fn != handler)
-                    return fn;
-            });
-        };
-        return Event;
-    }());
-    pl.Event = Event;
 })(pl || (pl = {}));
 /**
  * Created by cesarmejia on 26/09/2017.
@@ -519,6 +657,54 @@ var pl;
         Key[Key["UP_ARROW"] = 38] = "UP_ARROW";
         Key[Key["TAB"] = 9] = "TAB";
     })(Key = pl.Key || (pl.Key = {}));
+})(pl || (pl = {}));
+/**
+ * Created by cesarmejia on 20/08/2017.
+ */
+(function (pl) {
+    var PLEvent = /** @class */ (function () {
+        // endregion
+        /**
+         * Create a PLEvent instance.
+         * @constructor
+         */
+        function PLEvent() {
+            this._handlers = [];
+            this._scope = this || window;
+        }
+        // region Methods
+        /**
+         * Add new handler.
+         * @param {function} handler
+         */
+        PLEvent.prototype.add = function (handler) {
+            if (handler) {
+                this._handlers.push(handler);
+            }
+        };
+        /**
+         * Excecute all suscribed handlers.
+         */
+        PLEvent.prototype.fire = function () {
+            var _this = this;
+            var args = arguments;
+            this._handlers.forEach(function (handler) {
+                handler.apply(_this._scope, args);
+            });
+        };
+        /**
+         * Remove handler from handlers.
+         * @param {function} handler
+         */
+        PLEvent.prototype.remove = function (handler) {
+            this._handlers = this._handlers.filter(function (fn) {
+                if (fn != handler)
+                    return fn;
+            });
+        };
+        return PLEvent;
+    }());
+    pl.PLEvent = PLEvent;
 })(pl || (pl = {}));
 /**
  * Created by cesarmejia on 29/08/2017.
@@ -687,8 +873,8 @@ var pl;
          * @returns {boolean}
          */
         Validator.hash = function (value) {
-            if (!Validator.isString(value)) { }
-            return false;
+            if (!Validator.isString(value))
+                return false;
             return /^#\w*/.test(value);
         };
         /**
