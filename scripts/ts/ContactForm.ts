@@ -93,9 +93,9 @@ module pl {
          */
         private disableForm() {
             if (this._disabled)
-                Util.addClass(this.element, 'disabled');
+                Classie.addClass(this.element, 'disabled');
             else
-                Util.removeClass(this.element, 'disabled');
+                Classie.removeClass(this.element, 'disabled');
 
             [].forEach.call(this.inputs, input => {
                 input.disabled = this._disabled;
@@ -114,8 +114,8 @@ module pl {
 
             while (parent = <HTMLElement>parent.parentNode) {
                 if (parent instanceof HTMLElement) {
-                    if (isText && Util.hasClass(parent, 'input-container')) { break; }
-                    if (!isText && (Util.hasClass(parent, 'input-group') || 'fieldset' === parent.tagName.toLowerCase())) { break; }
+                    if (isText && Classie.hasClass(parent, 'input-container')) { break; }
+                    if (!isText && (Classie.hasClass(parent, 'input-group') || 'fieldset' === parent.tagName.toLowerCase())) { break; }
                 }
             }
 
@@ -334,10 +334,10 @@ module pl {
                 }
 
                 // Remove invalid class.
-                Util.removeClass(input, 'invalid');
+                Classie.removeClass(input, 'invalid');
 
                 // Unmark as invalid input parent if has class ".input-container"
-                inputContainer && Util.removeClass(inputContainer, 'invalid');
+                inputContainer && Classie.removeClass(inputContainer, 'invalid');
 
             } else {
 
@@ -349,20 +349,21 @@ module pl {
                     clueElem = document.createElement('span');
                     clueElem.innerText = clueText;
 
-                    Util.addClass(clueElem, 'input-clue');
+                    Classie.addClass(clueElem, 'input-clue');
 
                     // Store clue element in input.
                     input['clue-elem'] = clueElem;
 
-                    Util.insertBefore(clueElem, input);
+                    // Insert before.
+                    input.parentNode.insertBefore(clueElem, input);
 
                 }
 
                 // Set invalid class.
-                Util.addClass(input, 'invalid');
+                Classie.addClass(input, 'invalid');
 
                 // Mark as invalid input parent if has class ".input-container"
-                inputContainer && Util.addClass(inputContainer, 'invalid');
+                inputContainer && Classie.addClass(inputContainer, 'invalid');
 
             }
         }

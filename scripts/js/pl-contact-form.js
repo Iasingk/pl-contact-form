@@ -66,74 +66,109 @@ var pl;
     pl.PLEvent = PLEvent;
 })(pl || (pl = {}));
 /**
- * Created by cesarmejia on 29/08/2017.
+ * Created by cesarmejia on 07/02/2018.
  */
 (function (pl) {
-    var Util = /** @class */ (function () {
-        function Util() {
+    var Classie = /** @class */ (function () {
+        function Classie() {
         }
+        /**
+         * Adds the specified class to an element.
+         * @param {HTMLElement} elem
+         * @param {string} className
+         */
+        Classie.addClass = function (elem, className) {
+            if (elem.classList)
+                elem.classList.add(className);
+            else if (!Classie.hasClass(elem, className))
+                elem.className += " " + className;
+        };
         /**
          * Determine whether any of the matched elements are assigned the given class.
          * @param {HTMLElement} elem
          * @param {string} className
          * @returns {boolean}
          */
-        Util.hasClass = function (elem, className) {
+        Classie.hasClass = function (elem, className) {
             return elem.classList
                 ? elem.classList.contains(className)
                 : new RegExp("\\b" + className + "\\b").test(elem.className);
-        };
-        /**
-         * Adds the specified class to an element.
-         * @param {HTMLElement} elem
-         * @param {string} className
-         */
-        Util.addClass = function (elem, className) {
-            if (elem.classList)
-                elem.classList.add(className);
-            else if (!Util.hasClass(elem, className))
-                elem.className += " " + className;
         };
         /**
          * Remove class from element.
          * @param {HTMLElement} elem
          * @param {string} className
          */
-        Util.removeClass = function (elem, className) {
+        Classie.removeClass = function (elem, className) {
             if (elem.classList)
                 elem.classList.remove(className);
             else
                 elem.className = elem.className.replace(new RegExp("\\b" + className + "\\b", "g"), '');
         };
         /**
-         * Insert an HTML structure before a given DOM tree element.
+         * Remove all classes in element.
          * @param {HTMLElement} elem
-         * @param {HTMLElement} refElem
          */
-        Util.insertBefore = function (elem, refElem) {
-            refElem.parentNode.insertBefore(elem, refElem);
+        Classie.reset = function (elem) {
+            elem.className = '';
         };
         /**
-         * Insert an HTML structure after a given DOM tree element.
+         * Add or remove class from element.
          * @param {HTMLElement} elem
-         * @param {HTMLElement} refElem
+         * @param {string} className
          */
-        Util.insertAfter = function (elem, refElem) {
-            refElem.parentNode.insertBefore(elem, refElem.nextSibling);
+        Classie.toggleClass = function (elem, className) {
+            if (elem.classList)
+                elem.classList.toggle(className);
+            else
+                Classie.hasClass(elem, className)
+                    ? Classie.removeClass(elem, className)
+                    : Classie.addClass(elem, className);
+        };
+        return Classie;
+    }());
+    pl.Classie = Classie;
+})(pl || (pl = {}));
+/**
+ * Created by cesarmejia on 29/08/2017.
+ */
+/**
+ * Created by Sexar on 07/02/2018.
+ */
+(function (pl) {
+    var Util = /** @class */ (function () {
+        function Util() {
+        }
+        /**
+         * Capitalize text.
+         * @param {string} text
+         * @returns {string}
+         */
+        Util.capitalizeText = function (text) {
+            return text.replace(/\w/, function (l) { return l.toUpperCase(); });
         };
         /**
-         * Utility method to extend defaults with user settings
-         * @param {object} source
-         * @param {object} settings
-         * @return {object}
+         * Merge objects and create a new one.
+         * @param {Array<Object>} objects
+         * @return {Object}
          */
-        Util.extendsDefaults = function (source, settings) {
-            var property;
-            for (property in settings) {
-                if (settings.hasOwnProperty(property))
-                    source[property] = settings[property];
+        Util.extendsDefaults = function () {
+            var objects = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                objects[_i] = arguments[_i];
             }
-            return source;
+            var result = {}, i;
+            for (i = 0; i < objects.length; i++) {
+                (function (currentObj) {
+                    var prop;
+                    for (prop in currentObj) {
+                        if (currentObj.hasOwnProperty(prop)) {
+                            result[prop] = currentObj[prop];
+                        }
+                    }
+                })(objects[i]);
+            }
+            return result;
         };
         return Util;
     }());
@@ -422,9 +457,9 @@ var pl;
         ContactForm.prototype.disableForm = function () {
             var _this = this;
             if (this._disabled)
-                pl.Util.addClass(this.element, 'disabled');
+                pl.Classie.addClass(this.element, 'disabled');
             else
-                pl.Util.removeClass(this.element, 'disabled');
+                pl.Classie.removeClass(this.element, 'disabled');
             [].forEach.call(this.inputs, function (input) {
                 input.disabled = _this._disabled;
             });
@@ -439,10 +474,10 @@ var pl;
             var container = null, parent = input;
             while (parent = parent.parentNode) {
                 if (parent instanceof HTMLElement) {
-                    if (isText && pl.Util.hasClass(parent, 'input-container')) {
+                    if (isText && pl.Classie.hasClass(parent, 'input-container')) {
                         break;
                     }
-                    if (!isText && (pl.Util.hasClass(parent, 'input-group') || 'fieldset' === parent.tagName.toLowerCase())) {
+                    if (!isText && (pl.Classie.hasClass(parent, 'input-group') || 'fieldset' === parent.tagName.toLowerCase())) {
                         break;
                     }
                 }
@@ -623,9 +658,9 @@ var pl;
                     input['clue-elem'] = null;
                 }
                 // Remove invalid class.
-                pl.Util.removeClass(input, 'invalid');
+                pl.Classie.removeClass(input, 'invalid');
                 // Unmark as invalid input parent if has class ".input-container"
-                inputContainer && pl.Util.removeClass(inputContainer, 'invalid');
+                inputContainer && pl.Classie.removeClass(inputContainer, 'invalid');
             }
             else {
                 if (!clueElem) {
@@ -634,15 +669,16 @@ var pl;
                     // Create clue element.
                     clueElem = document.createElement('span');
                     clueElem.innerText = clueText;
-                    pl.Util.addClass(clueElem, 'input-clue');
+                    pl.Classie.addClass(clueElem, 'input-clue');
                     // Store clue element in input.
                     input['clue-elem'] = clueElem;
-                    pl.Util.insertBefore(clueElem, input);
+                    // Insert before.
+                    input.parentNode.insertBefore(clueElem, input);
                 }
                 // Set invalid class.
-                pl.Util.addClass(input, 'invalid');
+                pl.Classie.addClass(input, 'invalid');
                 // Mark as invalid input parent if has class ".input-container"
-                inputContainer && pl.Util.addClass(inputContainer, 'invalid');
+                inputContainer && pl.Classie.addClass(inputContainer, 'invalid');
             }
         };
         /**

@@ -1,75 +1,43 @@
 /**
  * Created by cesarmejia on 29/08/2017.
  */
+/**
+ * Created by Sexar on 07/02/2018.
+ */
 module pl {
 
     export class Util {
 
         /**
-         * Determine whether any of the matched elements are assigned the given class.
-         * @param {HTMLElement} elem
-         * @param {string} className
-         * @returns {boolean}
+         * Capitalize text.
+         * @param {string} text
+         * @returns {string}
          */
-        public static hasClass(elem: HTMLElement, className: string) {
-            return elem.classList
-                ? elem.classList.contains(className)
-                : new RegExp("\\b" + className + "\\b").test(elem.className);
+        static capitalizeText(text: string) {
+            return text.replace(/\w/, l => l.toUpperCase() );
         }
 
         /**
-         * Adds the specified class to an element.
-         * @param {HTMLElement} elem
-         * @param {string} className
+         * Merge objects and create a new one.
+         * @param {Array<Object>} objects
+         * @return {Object}
          */
-        public static addClass(elem: HTMLElement, className: string) {
-            if (elem.classList) elem.classList.add(className);
-            else if (!Util.hasClass(elem, className)) elem.className += " " + className;
-        }
+        static extendsDefaults(...objects) {
+            let result: Object = {}, i: number;
 
-        /**
-         * Remove class from element.
-         * @param {HTMLElement} elem
-         * @param {string} className
-         */
-        public static removeClass(elem: HTMLElement, className: string) {
-            if (elem.classList) elem.classList.remove(className);
-            else elem.className = elem.className.replace(new RegExp("\\b" + className + "\\b", "g"), '');
-        }
+            for (i = 0; i < objects.length; i++) {
+                (currentObj => {
+                    let prop;
 
-        /**
-         * Insert an HTML structure before a given DOM tree element.
-         * @param {HTMLElement} elem
-         * @param {HTMLElement} refElem
-         */
-        public static insertBefore(elem: HTMLElement, refElem: HTMLElement) {
-            refElem.parentNode.insertBefore(elem, refElem);
-        }
-
-        /**
-         * Insert an HTML structure after a given DOM tree element.
-         * @param {HTMLElement} elem
-         * @param {HTMLElement} refElem
-         */
-        public static insertAfter(elem: HTMLElement, refElem: HTMLElement) {
-            refElem.parentNode.insertBefore(elem, refElem.nextSibling);
-        }
-
-        /**
-         * Utility method to extend defaults with user settings
-         * @param {object} source
-         * @param {object} settings
-         * @return {object}
-         */
-        static extendsDefaults(source: Object, settings: Object) {
-            let property;
-
-            for (property in settings) {
-                if (settings.hasOwnProperty(property))
-                    source[property] = settings[property];
+                    for (prop in currentObj) {
+                        if (currentObj.hasOwnProperty(prop)) {
+                            result[prop] = currentObj[prop];
+                        }
+                    }
+                })(objects[i]);
             }
 
-            return source;
+            return result;
         }
 
     }
