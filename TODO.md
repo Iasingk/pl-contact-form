@@ -10,3 +10,4 @@
 - [x] Validate input radio and check
 - [x] Validate equal
 - [ ] Add error to checkbox or radio group (line: 314)
+- [ ] Add ajax states to form
