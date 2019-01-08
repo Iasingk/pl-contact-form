@@ -134,8 +134,10 @@ module pl {
             let input: HTMLInputElement = ev.target;
 
             // Validate input.
-            this.validate(input);
+            let valid = this.validate(input);
 
+            // Notify that input changed.
+            this.onInputChange(input, valid);
         }
 
         /**
@@ -526,6 +528,17 @@ module pl {
         }
 
         /**
+         * Fires when an input changes its value.
+         * @param {HTMLElement} input
+         * @param {boolean} valid
+         */
+        private onInputChange(input, valid) {
+            if (this._inputChange) {
+                this._inputChange.fire(input, valid);
+            }
+        }
+
+        /**
          * Fires when an input has an error.
          * @param {HTMLInputElement} input
          */
@@ -606,6 +619,24 @@ module pl {
             }
 
             return this._inputError;
+        }
+
+        /**
+         * Input change event.
+         * @type {pl.PLEvent}
+         */
+        private _inputChange: PLEvent;
+
+        /**
+         * Get input change event.
+         * @returns {pl.PLEvent}
+         */
+        get inputChange() {
+            if (!this._inputChange) {
+                this._inputChange = new PLEvent();
+            }
+
+            return this._inputChange;
         }
 
         /**

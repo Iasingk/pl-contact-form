@@ -161,6 +161,16 @@
                 }
 
                 /**
+                 * Handle input change event.
+                 * @param {HTMLElement} input
+                 * @param {boolean} valid
+                 */
+                function handleInputChange(input, valid) {
+                    let name = input.name;
+                    console.log("Input %s has changed", name);
+                }
+
+                /**
                  * Handle form sending event.
                  */
                 function handleSending() {
@@ -218,6 +228,7 @@
                 form.sending.add(handleSending);
                 form.success.add(handleSuccess);
                 form.inputError.add(handleInputError);
+                form.inputChange.add(handleInputChange);
 
             })();
         </script>
