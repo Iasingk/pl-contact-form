@@ -495,7 +495,9 @@ var pl;
             // Retrieve input and some attrs.
             var input = ev.target;
             // Validate input.
-            this.validate(input);
+            var valid = this.validate(input);
+            // Notify that input changed.
+            this.onInputChange(input, valid);
         };
         /**
          * Handles state changes of request.
@@ -696,10 +698,12 @@ var pl;
                 valid = this.isCheckboxValid(input);
                 this.checkboxes[name].forEach(function (checkbox) { _this.toggleInputError(checkbox, valid); });
             }
+            // Get validity of "radio" and toggle his error.
             else if ("radio" === type) {
                 valid = this.isRadioValid(input);
                 this.radios[name].forEach(function (radio) { _this.toggleInputError(radio, valid); });
             }
+            // Get validity of "text" and toggle his error.
             else {
                 valid = this.isTextValid(input);
                 this.toggleInputError(input, valid);
@@ -817,6 +821,16 @@ var pl;
             this._letCloseWindow = true;
         };
         /**
+         * Fires when an input changes its value.
+         * @param {HTMLElement} input
+         * @param {boolean} valid
+         */
+        ContactForm.prototype.onInputChange = function (input, valid) {
+            if (this._inputChange) {
+                this._inputChange.fire(input, valid);
+            }
+        };
+        /**
          * Fires when an input has an error.
          * @param {HTMLInputElement} input
          */
@@ -877,6 +891,20 @@ var pl;
                     this._inputError = new pl.PLEvent();
                 }
                 return this._inputError;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(ContactForm.prototype, "inputChange", {
+            /**
+             * Get input change event.
+             * @returns {pl.PLEvent}
+             */
+            get: function () {
+                if (!this._inputChange) {
+                    this._inputChange = new pl.PLEvent();
+                }
+                return this._inputChange;
             },
             enumerable: true,
             configurable: true
